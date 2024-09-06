@@ -22,7 +22,7 @@ export default function Dashboard() {
         } else if (status === "authenticated" && session) {
             console.log("Authenticated session:", session)
         }
-    }, [status, session, router])
+    }, [status, router])
 
     const handleAssetAdded = () => {
         setRefreshKey((prevKey) => prevKey + 1)

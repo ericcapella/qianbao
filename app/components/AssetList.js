@@ -11,8 +11,14 @@ export default function AssetList({ onAssetsLoaded }) {
     const [assetPrices, setAssetPrices] = useState({})
     const { data: session, status } = useSession()
 
+    useEffect(() => {
+        if (status === "authenticated" && session?.user?.email) {
+            fetchPortfolio()
+        }
+    }, [status, session?.user?.email])
+
     const fetchPortfolio = async () => {
-        if (!session) return
+        if (!session?.user?.email) return
         try {
             const response = await fetch(
                 `/api/portfolios?userEmail=${encodeURIComponent(
@@ -21,9 +27,11 @@ export default function AssetList({ onAssetsLoaded }) {
             )
             if (response.ok) {
                 const data = await response.json()
-                setPortfolio(data)
-                onAssetsLoaded(data.assets)
-                fetchAssetPrices(Object.keys(data.assets))
+                if (JSON.stringify(data) !== JSON.stringify(portfolio)) {
+                    setPortfolio(data)
+                    onAssetsLoaded(data.assets)
+                    fetchAssetPrices(Object.keys(data.assets))
+                }
             }
         } catch (error) {
             console.error("Error fetching portfolio:", error)
@@ -65,12 +73,6 @@ export default function AssetList({ onAssetsLoaded }) {
             console.error("Error fetching asset prices:", error)
         }
     }
-
-    useEffect(() => {
-        if (status === "authenticated") {
-            fetchPortfolio()
-        }
-    }, [status, session])
 
     if (status === "loading") {
         return <div>Loading assets...</div>
