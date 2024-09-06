@@ -16,6 +16,7 @@ export default function AssetForm({ onAssetAdded }) {
             return
         }
         try {
+            console.log(`Submitting asset: ${symbol}`)
             const assetResponse = await fetch("/api/assets", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -23,6 +24,10 @@ export default function AssetForm({ onAssetAdded }) {
             })
 
             if (assetResponse.ok) {
+                const assetData = await assetResponse.json()
+                console.log(`Asset response:`, assetData)
+
+                console.log(`Adding transaction for ${symbol}`)
                 const transactionResponse = await fetch("/api/assets", {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -35,17 +40,21 @@ export default function AssetForm({ onAssetAdded }) {
                 })
 
                 if (transactionResponse.ok) {
+                    const transactionData = await transactionResponse.json()
+                    console.log(`Transaction response:`, transactionData)
                     setSymbol("")
                     setDate("")
                     setAmount("")
                     onAssetAdded()
                 } else {
                     const data = await transactionResponse.json()
+                    console.error(`Transaction error:`, data)
                     alert(data.error || "Failed to add transaction")
                 }
             } else {
                 const data = await assetResponse.json()
-                alert(data.error || "Failed to add asset")
+                console.error(`Asset error:`, data)
+                alert(data.error || "Failed to add or update asset")
             }
         } catch (error) {
             console.error("Error adding asset and transaction:", error)

@@ -20,14 +20,9 @@ import {
 
 export default function AssetPieChart({ assets }) {
     const chartData = useMemo(() => {
-        return assets.map((asset) => ({
-            symbol: asset.symbol,
-            value:
-                parseFloat(
-                    asset.data["Weekly Time Series"]?.[
-                        Object.keys(asset.data["Weekly Time Series"])[0]
-                    ]?.["4. close"]
-                ) * asset.totalAmount,
+        return Object.entries(assets).map(([symbol, asset]) => ({
+            symbol,
+            value: asset.totalAmount,
         }))
     }, [assets])
 
