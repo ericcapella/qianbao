@@ -28,11 +28,22 @@ export default function AssetList() {
                 {assets.map((asset) => (
                     <li key={asset.symbol} className="mb-2">
                         <strong>{asset.symbol}</strong>:{" "}
+                        {(
+                            parseFloat(
+                                asset.data["Weekly Time Series"]?.[
+                                    Object.keys(
+                                        asset.data["Weekly Time Series"]
+                                    )[0]
+                                ]?.["4. close"]
+                            ) * asset.totalAmount
+                        ).toFixed(2)}
+                        € (Price:{" "}
                         {
                             asset.data["Weekly Time Series"]?.[
                                 Object.keys(asset.data["Weekly Time Series"])[0]
                             ]?.["4. close"]
                         }
+                        €, Amount: {asset.totalAmount})
                     </li>
                 ))}
             </ul>

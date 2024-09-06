@@ -44,13 +44,48 @@ export async function GET() {
     try {
         const client = await clientPromise
         const db = client.db("stocktracker")
-        const collection = db.collection("assets")
+        const assetsCollection = db.collection("assets")
+        const transactionsCollection = db.collection("transactions")
 
-        const assets = await collection.find({}).toArray()
+        const assets = await assetsCollection.find({}).toArray()
+        const transactions = await transactionsCollection.find({}).toArray()
 
-        return NextResponse.json(assets)
+        const assetsWithTransactions = assets.map((asset) => {
+            const assetTransactions = transactions.filter(
+                (t) => t.symbol === asset.symbol
+            )
+            const totalAmount = assetTransactions.reduce(
+                (sum, t) => sum + t.amount,
+                0
+            )
+            return { ...asset, totalAmount }
+        })
+
+        return NextResponse.json(assetsWithTransactions)
     } catch (error) {
         console.error("Error fetching assets:", error)
+        return NextResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+        )
+    }
+}
+
+export async function PUT(request) {
+    try {
+        const { symbol, date, amount } = await request.json()
+        const client = await clientPromise
+        const db = client.db("stocktracker")
+        const collection = db.collection("transactions")
+
+        await collection.insertOne({ symbol, date, amount })
+
+        return NextResponse.json(
+            { message: "Transaction added successfully" },
+            { status: 201 }
+        )
+    } catch (error) {
+        console.error("Error adding transaction:", error)
         return NextResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }
