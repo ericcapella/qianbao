@@ -41,18 +41,32 @@ const authOptions = {
     ],
     session: {
         strategy: "jwt",
+        maxAge: 180 * 24 * 60 * 60, // 30 days
+    },
+    callbacks: {
+        async jwt({ token, user }) {
+            if (user) {
+                token.id = user.id
+                token.name = user.name
+                token.email = user.email
+            }
+            return token
+        },
+        async session({ session, token }) {
+            session.user.id = token.id
+            session.user.name = token.name
+            session.user.email = token.email
+            return session
+        },
     },
     pages: {
         signIn: "/login",
     },
-    callbacks: {
-        async session({ session, token }) {
-            session.user.id = token.sub
-            return session
-        },
-    },
+    secret: process.env.NEXTAUTH_SECRET,
+    debug: process.env.NODE_ENV === "development",
 }
 
 const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }
+export { authOptions }

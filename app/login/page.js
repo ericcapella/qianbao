@@ -11,16 +11,33 @@ export default function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        console.log("Attempting login...")
         const result = await signIn("credentials", {
             email,
             password,
             redirect: false,
         })
+        console.log("Login result:", result)
 
         if (result.ok) {
-            router.push("/dashboard")
+            console.log("Login successful, waiting for session...")
+            // Wait for the session to be updated
+            await new Promise((resolve) => setTimeout(resolve, 500))
+            const session = await fetch("/api/auth/session")
+            const sessionData = await session.json()
+            console.log("Session after login:", sessionData)
+            if (sessionData.user) {
+                console.log("Session established, redirecting...")
+                router.push("/dashboard")
+            } else {
+                console.error("Session not established after login")
+                alert(
+                    "Login successful, but session not established. Please try again."
+                )
+            }
         } else {
-            alert("Login failed")
+            console.error("Login failed:", result.error)
+            alert("Login failed: " + result.error)
         }
     }
 

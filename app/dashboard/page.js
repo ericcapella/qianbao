@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import AssetForm from "../components/AssetForm"
@@ -13,6 +13,17 @@ export default function Dashboard() {
     const { data: session, status } = useSession()
     const router = useRouter()
 
+    useEffect(() => {
+        console.log("Session status:", status)
+        console.log("Session data:", session)
+        if (status === "unauthenticated") {
+            console.log("Redirecting to login...")
+            router.push("/login")
+        } else if (status === "authenticated" && session) {
+            console.log("Authenticated session:", session)
+        }
+    }, [status, session, router])
+
     const handleAssetAdded = () => {
         setRefreshKey((prevKey) => prevKey + 1)
     }
@@ -21,8 +32,7 @@ export default function Dashboard() {
         return <div>Loading...</div>
     }
 
-    if (!session) {
-        router.push("/login")
+    if (status === "unauthenticated") {
         return null
     }
 

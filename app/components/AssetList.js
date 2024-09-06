@@ -9,7 +9,7 @@ export default function AssetList({ onAssetsLoaded }) {
         lastRefreshed: null,
     })
     const [assetPrices, setAssetPrices] = useState({})
-    const { data: session } = useSession()
+    const { data: session, status } = useSession()
 
     const fetchPortfolio = async () => {
         if (!session) return
@@ -67,8 +67,14 @@ export default function AssetList({ onAssetsLoaded }) {
     }
 
     useEffect(() => {
-        fetchPortfolio()
-    }, [session])
+        if (status === "authenticated") {
+            fetchPortfolio()
+        }
+    }, [status, session])
+
+    if (status === "loading") {
+        return <div>Loading assets...</div>
+    }
 
     if (!session) {
         return <div>Please log in to view your assets.</div>
