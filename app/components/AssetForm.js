@@ -1,15 +1,20 @@
 "use client"
 
 import { useState } from "react"
-import { getSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 
 export default function AssetForm({ onAssetAdded }) {
     const [symbol, setSymbol] = useState("")
     const [date, setDate] = useState("")
     const [amount, setAmount] = useState("")
+    const { data: session } = useSession()
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        if (!session) {
+            alert("You must be logged in to add assets")
+            return
+        }
         try {
             const assetResponse = await fetch("/api/assets", {
                 method: "POST",
@@ -18,7 +23,6 @@ export default function AssetForm({ onAssetAdded }) {
             })
 
             if (assetResponse.ok) {
-                const session = await getSession()
                 const transactionResponse = await fetch("/api/assets", {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },

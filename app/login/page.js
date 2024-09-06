@@ -18,7 +18,7 @@ export default function Login() {
         })
 
         if (result.ok) {
-            router.push("/")
+            router.push("/dashboard")
         } else {
             alert("Login failed")
         }
