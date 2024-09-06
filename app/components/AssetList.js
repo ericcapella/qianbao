@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 
-export default function AssetList() {
+export default function AssetList({ onAssetsLoaded }) {
     const [assets, setAssets] = useState([])
     const { data: session } = useSession()
 
@@ -18,6 +18,7 @@ export default function AssetList() {
             if (response.ok) {
                 const data = await response.json()
                 setAssets(data)
+                onAssetsLoaded(data)
             }
         } catch (error) {
             console.error("Error fetching assets:", error)
