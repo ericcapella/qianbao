@@ -1,13 +1,23 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { getSession } from "next-auth/react"
 
 export default function AssetList() {
     const [assets, setAssets] = useState([])
 
     const fetchAssets = async () => {
         try {
-            const response = await fetch("/api/assets")
+            const session = await getSession()
+            if (!session || !session.user) {
+                console.error("User not authenticated")
+                return
+            }
+            const response = await fetch(
+                `/api/assets?userEmail=${encodeURIComponent(
+                    session.user.email
+                )}`
+            )
             if (response.ok) {
                 const data = await response.json()
                 setAssets(data)

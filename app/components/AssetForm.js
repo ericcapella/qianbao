@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { getSession } from "next-auth/react"
 
 export default function AssetForm({ onAssetAdded }) {
     const [symbol, setSymbol] = useState("")
@@ -17,6 +18,7 @@ export default function AssetForm({ onAssetAdded }) {
             })
 
             if (assetResponse.ok) {
+                const session = await getSession()
                 const transactionResponse = await fetch("/api/assets", {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -24,6 +26,7 @@ export default function AssetForm({ onAssetAdded }) {
                         symbol,
                         date,
                         amount: parseFloat(amount),
+                        userEmail: session.user.email,
                     }),
                 })
 

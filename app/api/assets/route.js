@@ -40,18 +40,37 @@ export async function POST(request) {
     }
 }
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const { searchParams } = new URL(request.url)
+        const userEmail = searchParams.get("userEmail")
+
+        if (!userEmail) {
+            return NextResponse.json(
+                { error: "User email is required" },
+                { status: 400 }
+            )
+        }
+
         const client = await clientPromise
         const db = client.db("stocktracker")
         const assetsCollection = db.collection("assets")
         const transactionsCollection = db.collection("transactions")
 
-        const assets = await assetsCollection.find({}).toArray()
-        const transactions = await transactionsCollection.find({}).toArray()
+        const userTransactions = await transactionsCollection
+            .find({ userEmail })
+            .toArray()
+
+        const userAssetSymbols = [
+            ...new Set(userTransactions.map((t) => t.symbol)),
+        ]
+
+        const assets = await assetsCollection
+            .find({ symbol: { $in: userAssetSymbols } })
+            .toArray()
 
         const assetsWithTransactions = assets.map((asset) => {
-            const assetTransactions = transactions.filter(
+            const assetTransactions = userTransactions.filter(
                 (t) => t.symbol === asset.symbol
             )
             const totalAmount = assetTransactions.reduce(
@@ -73,12 +92,12 @@ export async function GET() {
 
 export async function PUT(request) {
     try {
-        const { symbol, date, amount } = await request.json()
+        const { symbol, date, amount, userEmail } = await request.json()
         const client = await clientPromise
         const db = client.db("stocktracker")
         const collection = db.collection("transactions")
 
-        await collection.insertOne({ symbol, date, amount })
+        await collection.insertOne({ symbol, date, amount, userEmail })
 
         return NextResponse.json(
             { message: "Transaction added successfully" },
