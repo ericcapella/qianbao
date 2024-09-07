@@ -93,7 +93,8 @@ export default function AssetList({ onAssetsLoaded }) {
                             <span>
                                 {" "}
                                 - Value: $
-                                {(amount * assetPrices[symbol]).toFixed(2)}
+                                {(amount * assetPrices[symbol]).toFixed(2)} -
+                                Price: {assetPrices[symbol].toFixed(2)}
                             </span>
                         )}
                     </li>
