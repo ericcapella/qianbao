@@ -47,14 +47,9 @@ export default function AssetList({ onAssetsLoaded }) {
                 const assets = await response.json()
                 console.log("Fetched assets:", assets)
                 const prices = assets.reduce((acc, asset) => {
-                    if (asset.data && asset.data["Weekly Time Series"]) {
-                        const latestDate = Object.keys(
-                            asset.data["Weekly Time Series"]
-                        )[0]
-                        const latestPrice =
-                            asset.data["Weekly Time Series"][latestDate][
-                                "4. close"
-                            ]
+                    if (asset.prices) {
+                        const latestDate = Object.keys(asset.prices)[0]
+                        const latestPrice = asset.prices[latestDate]
                         acc[asset.symbol] = parseFloat(latestPrice)
                     } else {
                         console.error("Unexpected asset structure:", asset)
