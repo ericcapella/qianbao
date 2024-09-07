@@ -12,24 +12,32 @@ export async function POST(request) {
         const uniqueUsers = await transactionsCollection.distinct("userEmail")
 
         for (const userEmail of uniqueUsers) {
-            // Calculate total amount for each symbol for the user
+            // Calculate total shares and total paid for each symbol for the user
             const userPortfolio = await transactionsCollection
                 .aggregate([
                     { $match: { userEmail } },
                     {
                         $group: {
                             _id: "$symbol",
-                            totalAmount: { $sum: "$amount" },
+                            totalShares: { $sum: "$shares" },
+                            totalPaid: { $sum: "$totalPaid" },
                         },
                     },
                 ])
                 .toArray()
 
-            // Convert the array to an object with escaped symbols
-            const assets = userPortfolio.reduce((acc, { _id, totalAmount }) => {
-                acc[_id] = totalAmount
-                return acc
-            }, {})
+            // Convert the array to an object with the new structure
+            const assets = userPortfolio.reduce(
+                (acc, { _id, totalShares, totalPaid }) => {
+                    acc[_id] = {
+                        shares: totalShares,
+                        totalPaid,
+                        paidPerShare: totalPaid / totalShares,
+                    }
+                    return acc
+                },
+                {}
+            )
 
             // Update or insert the portfolio entry
             await portfoliosCollection.updateOne(

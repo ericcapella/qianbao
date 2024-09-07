@@ -80,21 +80,26 @@ export default function AssetList({ onAssetsLoaded }) {
     return (
         <div>
             <h2 className="text-xl font-bold mb-2">Asset List</h2>
-            <ul>
-                {Object.entries(portfolio.assets).map(([symbol, amount]) => (
-                    <li key={symbol} className="mb-2">
-                        <strong>{symbol}</strong>: {amount} shares
-                        {assetPrices[symbol] && (
-                            <span>
-                                {" "}
-                                - Value: $
-                                {(amount * assetPrices[symbol]).toFixed(2)} -
-                                Price: {assetPrices[symbol].toFixed(2)}
-                            </span>
-                        )}
-                    </li>
-                ))}
-            </ul>
+            {portfolio.assets && Object.keys(portfolio.assets).length > 0 ? (
+                <ul>
+                    {Object.entries(portfolio.assets).map(([symbol, asset]) => (
+                        <li key={symbol} className="mb-2">
+                            <strong>{symbol}</strong>: {asset.shares} shares
+                            {assetPrices[symbol] && (
+                                <span>
+                                    {" "}
+                                    - Value: $
+                                    {(
+                                        asset.shares * assetPrices[symbol]
+                                    ).toFixed(2)}
+                                </span>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p>No assets in your portfolio.</p>
+            )}
             {portfolio.lastRefreshed && (
                 <p className="text-sm text-gray-500 mt-2">
                     Last refreshed:{" "}

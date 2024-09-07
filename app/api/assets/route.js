@@ -145,7 +145,8 @@ export async function GET(request) {
 
 export async function PUT(request) {
     try {
-        const { symbol, date, amount, userEmail } = await request.json()
+        const { symbol, date, shares, totalPaid, userEmail } =
+            await request.json()
         const client = await clientPromise
         const db = client.db("stocktracker")
         const transactionsCollection = db.collection("transactions")
@@ -154,16 +155,37 @@ export async function PUT(request) {
         await transactionsCollection.insertOne({
             symbol,
             date,
-            amount,
+            shares,
+            totalPaid,
             userEmail,
         })
+
+        const portfolio = await portfoliosCollection.findOne({ userEmail })
+        let updatedAsset = {
+            shares: parseFloat(shares),
+            totalPaid: parseFloat(totalPaid),
+            paidPerShare: parseFloat(totalPaid) / parseFloat(shares),
+        }
+
+        if (portfolio && portfolio.assets && portfolio.assets[symbol]) {
+            const existingAsset = portfolio.assets[symbol]
+            updatedAsset = {
+                shares: existingAsset.shares + parseFloat(shares),
+                totalPaid: existingAsset.totalPaid + parseFloat(totalPaid),
+                paidPerShare:
+                    (existingAsset.totalPaid + parseFloat(totalPaid)) /
+                    (existingAsset.shares + parseFloat(shares)),
+            }
+        }
 
         await portfoliosCollection.updateOne(
             { userEmail },
             {
-                $inc: { [`assets.${symbol}`]: amount },
+                $set: {
+                    [`assets.${symbol}`]: updatedAsset,
+                    lastRefreshed: new Date(),
+                },
                 $setOnInsert: { userEmail },
-                $set: { lastRefreshed: new Date() },
             },
             { upsert: true }
         )

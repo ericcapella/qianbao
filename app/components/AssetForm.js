@@ -5,7 +5,8 @@ import { useSession } from "next-auth/react"
 
 export default function AssetForm({ onAssetAdded }) {
     const [symbol, setSymbol] = useState("")
-    const [amount, setAmount] = useState("")
+    const [shares, setShares] = useState("")
+    const [totalPaid, setTotalPaid] = useState("")
     const [date, setDate] = useState("")
     const { data: session } = useSession()
 
@@ -39,7 +40,8 @@ export default function AssetForm({ onAssetAdded }) {
                 body: JSON.stringify({
                     symbol,
                     date,
-                    amount: parseFloat(amount),
+                    shares: parseFloat(shares),
+                    totalPaid: parseFloat(totalPaid),
                     userEmail: session.user.email,
                 }),
             })
@@ -50,7 +52,8 @@ export default function AssetForm({ onAssetAdded }) {
 
             onAssetAdded()
             setSymbol("")
-            setAmount("")
+            setShares("")
+            setTotalPaid("")
             setDate("")
         } catch (error) {
             console.error("Error adding asset:", error)
@@ -69,9 +72,17 @@ export default function AssetForm({ onAssetAdded }) {
             />
             <input
                 type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Amount"
+                value={shares}
+                onChange={(e) => setShares(e.target.value)}
+                placeholder="Number of Shares"
+                required
+                className="mr-2 p-2 border rounded"
+            />
+            <input
+                type="number"
+                value={totalPaid}
+                onChange={(e) => setTotalPaid(e.target.value)}
+                placeholder="Total Paid"
                 required
                 className="mr-2 p-2 border rounded"
             />
