@@ -3,9 +3,9 @@ import clientPromise from "@/lib/mongodb"
 
 export async function POST(request) {
     try {
-        const { symbol, date } = await request.json()
+        const { symbol, date, timeSeriesType = "DAILY" } = await request.json()
         console.log(
-            `Received request to add/update asset: ${symbol} from date: ${date}`
+            `Received request to add/update asset: ${symbol} from date: ${date} using ${timeSeriesType} time series`
         )
 
         const client = await clientPromise
@@ -52,7 +52,7 @@ export async function POST(request) {
 
         if (shouldFetchNewData) {
             const apiKey = process.env.ALPHA_VANTAGE_API_KEY
-            const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol=${symbol}&apikey=${apiKey}`
+            const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_${timeSeriesType}&symbol=${symbol}&apikey=${apiKey}`
 
             console.log(`Fetching data from Alpha Vantage for ${symbol}`)
             const response = await fetch(apiUrl)
@@ -68,11 +68,25 @@ export async function POST(request) {
                 )
             }
 
-            const weeklyTimeSeries = data["Weekly Time Series"]
+            // Correct the key name based on the timeSeriesType
+            const timeSeriesKey =
+                timeSeriesType === "DAILY"
+                    ? "Time Series (Daily)"
+                    : "Weekly Time Series"
+            const timeSeries = data[timeSeriesKey]
+
+            if (!timeSeries) {
+                console.log(`No time series data found for ${symbol}`)
+                return NextResponse.json(
+                    { error: "No data available for this symbol" },
+                    { status: 404 }
+                )
+            }
+
             const lastRefreshed = data["Meta Data"]["3. Last Refreshed"]
             let prices = existingAsset ? existingAsset.prices : {}
 
-            for (const [dateStr, values] of Object.entries(weeklyTimeSeries)) {
+            for (const [dateStr, values] of Object.entries(timeSeries)) {
                 const currentDate = new Date(dateStr)
                 if (currentDate >= inputDate && !prices[dateStr]) {
                     prices[dateStr] = values["4. close"]

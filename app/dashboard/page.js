@@ -7,6 +7,7 @@ import AssetForm from "../components/AssetForm"
 import AssetList from "../components/AssetList"
 import AssetPieChart from "../components/AssetPieChart"
 import TotalValueCard from "../components/TotalValueCard"
+import TotalValueChart from "../components/TotalValueChart"
 
 export default function Dashboard() {
     const [refreshKey, setRefreshKey] = useState(0)
@@ -40,6 +41,7 @@ export default function Dashboard() {
     return (
         <div className="p-24">
             <TotalValueCard />
+            <TotalValueChart />
             <AssetForm onAssetAdded={handleAssetAdded} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AssetList key={refreshKey} onAssetsLoaded={setAssets} />
