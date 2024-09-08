@@ -25,10 +25,13 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useSession } from "next-auth/react"
+import TotalValueCard from "./TotalValueCard"
 
 export default function TotalValueChart() {
     const [chartData, setChartData] = useState([])
     const [timeRange, setTimeRange] = useState("1Y")
+    const [totalValue, setTotalValue] = useState(0)
+    const [variation, setVariation] = useState({ percentage: 0, value: 0 })
     const { data: session, status } = useSession()
 
     useEffect(() => {
@@ -46,7 +49,9 @@ export default function TotalValueChart() {
             )
             if (response.ok) {
                 const data = await response.json()
-                setChartData(data)
+                setChartData(data.history)
+                setTotalValue(data.totalValue)
+                setVariation(data.variation)
             }
         } catch (error) {
             console.error("Error fetching chart data:", error)
@@ -57,9 +62,6 @@ export default function TotalValueChart() {
         chartData.length > 1 &&
         chartData[chartData.length - 1].value > chartData[0].value
     const chartColor = isPositiveProgression ? "#5AC87C" : "#EF5343"
-
-    console.log("progession", isPositiveProgression)
-    console.log("chartColor", chartColor)
 
     const formatXAxis = (tickItem) => {
         const date = new Date(tickItem)
@@ -99,13 +101,8 @@ export default function TotalValueChart() {
 
     return (
         <Card>
-            <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
-                <div className="grid flex-1 gap-1 text-center sm:text-left">
-                    <CardTitle>Portfolio Value Over Time</CardTitle>
-                    <CardDescription>
-                        Showing portfolio value evolution
-                    </CardDescription>
-                </div>
+            <CardHeader className="flex items-center gap-2 space-y-0 py-5 sm:flex-row">
+                <TotalValueCard totalValue={totalValue} variation={variation} />
                 <Select value={timeRange} onValueChange={setTimeRange}>
                     <SelectTrigger
                         className="w-[160px] rounded-lg sm:ml-auto"

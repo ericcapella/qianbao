@@ -29,13 +29,19 @@ export async function GET(request) {
 
         let totalValue = 0
         let totalValueThirtyDaysAgo = 0
+        const assets = {}
 
         for (const [symbol, asset] of Object.entries(portfolio.assets)) {
             const assetData = await assetsCollection.findOne({ symbol })
             if (assetData && assetData.prices) {
                 const pricesArray = Object.entries(assetData.prices)
                 const latestPrice = parseFloat(pricesArray[0][1])
-                totalValue += asset.shares * latestPrice
+                const assetValue = asset.shares * latestPrice
+                totalValue += assetValue
+                assets[symbol] = {
+                    shares: asset.shares,
+                    value: assetValue,
+                }
 
                 // Calculate value 30 days ago
                 const thirtyDaysAgoIndex = pricesArray.findIndex(([date]) => {
@@ -62,7 +68,7 @@ export async function GET(request) {
                 100,
         }
 
-        return NextResponse.json({ totalValue, variation })
+        return NextResponse.json({ totalValue, variation, assets })
     } catch (error) {
         console.error("Error calculating total value:", error)
         return NextResponse.json(

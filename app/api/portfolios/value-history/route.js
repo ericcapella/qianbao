@@ -30,13 +30,13 @@ export async function GET(request) {
             })
         )
 
-        const portfolioHistory = calculatePortfolioHistory(
+        const { history, totalValue, variation } = calculatePortfolioHistory(
             transactions,
             assetPrices,
             timeRange
         )
 
-        return NextResponse.json(portfolioHistory)
+        return NextResponse.json({ history, totalValue, variation })
     } catch (error) {
         console.error("Error calculating portfolio value history:", error)
         return NextResponse.json(
@@ -65,7 +65,14 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
         })
     }
 
-    return portfolioHistory
+    const totalValue = portfolioHistory[portfolioHistory.length - 1].value
+    const startValue = portfolioHistory[0].value
+    const variation = {
+        value: totalValue - startValue,
+        percentage: ((totalValue - startValue) / startValue) * 100,
+    }
+
+    return { history: portfolioHistory, totalValue, variation }
 }
 
 function getStartDate(transactions, timeRange) {

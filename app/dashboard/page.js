@@ -40,7 +40,6 @@ export default function Dashboard() {
 
     return (
         <div className="p-24">
-            <TotalValueCard />
             <TotalValueChart />
             <AssetForm onAssetAdded={handleAssetAdded} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

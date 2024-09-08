@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo } from "react"
+import React, { useMemo, useState, useEffect } from "react"
 import { PieChart, Pie, Cell, Label, ResponsiveContainer } from "recharts"
 
 import {
@@ -17,18 +17,41 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from "@/components/ui/chart"
+import { useSession } from "next-auth/react"
 
-export default function AssetPieChart({ assets }) {
-    const chartData = useMemo(() => {
-        return Object.entries(assets).map(([symbol, asset]) => ({
-            symbol,
-            value: asset.totalAmount,
-        }))
-    }, [assets])
+export default function AssetPieChart() {
+    const [chartData, setChartData] = useState([])
+    const [totalValue, setTotalValue] = useState(0)
+    const { data: session, status } = useSession()
 
-    const totalValue = useMemo(() => {
-        return chartData.reduce((acc, curr) => acc + curr.value, 0)
-    }, [chartData])
+    useEffect(() => {
+        if (status === "authenticated" && session?.user?.email) {
+            fetchAssetData()
+        }
+    }, [status, session?.user?.email])
+
+    const fetchAssetData = async () => {
+        try {
+            const response = await fetch(
+                `/api/portfolios/total-value?userEmail=${encodeURIComponent(
+                    session.user.email
+                )}`
+            )
+            if (response.ok) {
+                const data = await response.json()
+                const assetData = Object.entries(data.assets).map(
+                    ([symbol, asset]) => ({
+                        symbol,
+                        value: asset.value,
+                    })
+                )
+                setChartData(assetData)
+                setTotalValue(data.totalValue)
+            }
+        } catch (error) {
+            console.error("Error fetching asset data:", error)
+        }
+    }
 
     const colors = [
         "#FF6384",
@@ -92,7 +115,6 @@ export default function AssetPieChart({ assets }) {
                                 innerRadius={60}
                                 outerRadius={80}
                                 paddingAngle={5}
-                                label
                             >
                                 {chartData.map((entry, index) => (
                                     <Cell
@@ -101,43 +123,6 @@ export default function AssetPieChart({ assets }) {
                                     />
                                 ))}
                             </Pie>
-                            <Label
-                                content={({ viewBox }) => {
-                                    const { cx, cy } = viewBox
-                                    return (
-                                        <text
-                                            x={cx}
-                                            y={cy}
-                                            fill="#333"
-                                            textAnchor="middle"
-                                            dominantBaseline="central"
-                                        >
-                                            <tspan
-                                                x={cx}
-                                                y={cy}
-                                                dy="-0.5em"
-                                                fontSize="24"
-                                                fontWeight="bold"
-                                            >
-                                                {totalValue.toLocaleString(
-                                                    undefined,
-                                                    { maximumFractionDigits: 2 }
-                                                )}
-                                                €
-                                            </tspan>
-                                            <tspan
-                                                x={cx}
-                                                y={cy}
-                                                dy="1.5em"
-                                                fontSize="14"
-                                            >
-                                                Total Value
-                                            </tspan>
-                                        </text>
-                                    )
-                                }}
-                                position="center"
-                            />
                         </PieChart>
                     </ResponsiveContainer>
                 </ChartContainer>
