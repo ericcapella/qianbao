@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import AssetForm from "../components/AssetForm"
 import AssetList from "../components/AssetList"
 import AssetPieChart from "../components/AssetPieChart"
+import TotalValueCard from "../components/TotalValueCard"
 
 export default function Dashboard() {
     const [refreshKey, setRefreshKey] = useState(0)
@@ -37,13 +38,13 @@ export default function Dashboard() {
     }
 
     return (
-        <main className="p-24">
-            <h1 className="text-3xl font-bold mb-4">Stock Asset Tracker</h1>
+        <div className="p-24">
+            <TotalValueCard />
             <AssetForm onAssetAdded={handleAssetAdded} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AssetList key={refreshKey} onAssetsLoaded={setAssets} />
                 <AssetPieChart assets={assets} />
             </div>
-        </main>
+        </div>
     )
 }
