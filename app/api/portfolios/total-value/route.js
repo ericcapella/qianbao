@@ -41,6 +41,8 @@ export async function GET(request) {
                 assets[symbol] = {
                     shares: asset.shares,
                     value: assetValue,
+                    paidPerShare: asset.paidPerShare,
+                    currentPrice: latestPrice,
                 }
 
                 // Calculate value 30 days ago

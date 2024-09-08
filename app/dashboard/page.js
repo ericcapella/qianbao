@@ -40,8 +40,8 @@ export default function Dashboard() {
 
     return (
         <div className="p-24">
-            <TotalValueChart />
             <AssetForm onAssetAdded={handleAssetAdded} />
+            <TotalValueChart />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AssetList key={refreshKey} onAssetsLoaded={setAssets} />
                 <AssetPieChart assets={assets} />

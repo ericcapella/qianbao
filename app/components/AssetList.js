@@ -2,70 +2,50 @@
 
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 
-export default function AssetList({ onAssetsLoaded }) {
-    const [portfolio, setPortfolio] = useState({
-        assets: {},
-        lastRefreshed: null,
-    })
-    const [assetPrices, setAssetPrices] = useState({})
+export default function AssetList() {
+    const [assets, setAssets] = useState([])
     const { data: session, status } = useSession()
 
     useEffect(() => {
         if (status === "authenticated" && session?.user?.email) {
-            fetchPortfolio()
+            fetchAssetData()
         }
     }, [status, session?.user?.email])
 
-    const fetchPortfolio = async () => {
-        if (!session?.user?.email) return
+    const fetchAssetData = async () => {
         try {
             const response = await fetch(
-                `/api/portfolios?userEmail=${encodeURIComponent(
+                `/api/portfolios/total-value?userEmail=${encodeURIComponent(
                     session.user.email
                 )}`
             )
             if (response.ok) {
                 const data = await response.json()
-                if (JSON.stringify(data) !== JSON.stringify(portfolio)) {
-                    setPortfolio(data)
-                    onAssetsLoaded(data.assets)
-                    fetchAssetPrices(Object.keys(data.assets))
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching portfolio:", error)
-        }
-    }
-
-    const fetchAssetPrices = async (symbols) => {
-        try {
-            const response = await fetch(
-                `/api/assets?symbols=${symbols.join(",")}`
-            )
-            if (response.ok) {
-                const assets = await response.json()
-                console.log("Fetched assets:", assets)
-                const prices = assets.reduce((acc, asset) => {
-                    if (asset.prices) {
-                        const latestDate = Object.keys(asset.prices)[0]
-                        const latestPrice = asset.prices[latestDate]
-                        acc[asset.symbol] = parseFloat(latestPrice)
-                    } else {
-                        console.error("Unexpected asset structure:", asset)
-                    }
-                    return acc
-                }, {})
-                console.log("Calculated prices:", prices)
-                setAssetPrices(prices)
-            } else {
-                console.error(
-                    "Error fetching asset prices:",
-                    response.statusText
+                const assetData = Object.entries(data.assets).map(
+                    ([symbol, asset]) => ({
+                        symbol,
+                        invested: asset.shares * asset.paidPerShare,
+                        position: asset.value,
+                        shares: asset.shares,
+                        buyInPrice: asset.paidPerShare,
+                        currentPrice: asset.currentPrice,
+                        profitLoss:
+                            asset.value - asset.paidPerShare * asset.shares,
+                    })
                 )
+                setAssets(assetData)
             }
         } catch (error) {
-            console.error("Error fetching asset prices:", error)
+            console.error("Error fetching asset data:", error)
         }
     }
 
@@ -79,33 +59,62 @@ export default function AssetList({ onAssetsLoaded }) {
 
     return (
         <div>
-            <h2 className="text-xl font-bold mb-2">Asset List</h2>
-            {portfolio.assets && Object.keys(portfolio.assets).length > 0 ? (
-                <ul>
-                    {Object.entries(portfolio.assets).map(([symbol, asset]) => (
-                        <li key={symbol} className="mb-2">
-                            <strong>{symbol}</strong>: {asset.shares} shares
-                            {assetPrices[symbol] && (
-                                <span>
-                                    {" "}
-                                    - Value: $
+            <h2 className="text-xl font-bold mb-4">Asset List</h2>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Asset name</TableHead>
+                        <TableHead className="text-right">
+                            Current price
+                        </TableHead>
+                        <TableHead className="text-right">Invested</TableHead>
+                        <TableHead className="text-right">Position</TableHead>
+                        <TableHead className="text-right">
+                            Profit/Loss
+                        </TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {assets.map((asset) => (
+                        <TableRow key={asset.symbol}>
+                            <TableCell className="font-medium">
+                                {asset.symbol.toUpperCase()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                                {asset.currentPrice.toFixed(2)} €
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <div>{asset.invested.toFixed(2)} €</div>
+                                <div className="text-sm text-gray-500">
+                                    {asset.buyInPrice.toFixed(2)} €/share
+                                </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <div>{asset.position.toFixed(2)} €</div>
+                                <div className="text-sm text-gray-500">
+                                    {asset.shares} shares
+                                </div>
+                            </TableCell>
+                            <TableCell
+                                className={`text-right ${
+                                    asset.profitLoss >= 0
+                                        ? "text-green-600"
+                                        : "text-red-600"
+                                }`}
+                            >
+                                <div>{asset.profitLoss.toFixed(2)} €</div>
+                                <div className="text-sm">
                                     {(
-                                        asset.shares * assetPrices[symbol]
+                                        (asset.profitLoss / asset.invested) *
+                                        100
                                     ).toFixed(2)}
-                                </span>
-                            )}
-                        </li>
+                                    %
+                                </div>
+                            </TableCell>
+                        </TableRow>
                     ))}
-                </ul>
-            ) : (
-                <p>No assets in your portfolio.</p>
-            )}
-            {portfolio.lastRefreshed && (
-                <p className="text-sm text-gray-500 mt-2">
-                    Last refreshed:{" "}
-                    {new Date(portfolio.lastRefreshed).toLocaleString()}
-                </p>
-            )}
+                </TableBody>
+            </Table>
         </div>
     )
 }
