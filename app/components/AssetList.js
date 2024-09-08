@@ -11,6 +11,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatNumber } from "@/lib/utils"
 
 export default function AssetList({ children }) {
     const [assets, setAssets] = useState([])
@@ -51,13 +52,13 @@ export default function AssetList({ children }) {
     }
 
     return (
-        <Card>
+        <Card className="my-4">
             <CardHeader>
                 <CardTitle>Asset Portfolio</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                <div className="grid grid-cols-5 gap-4">
+                    <div className="col-span-5 lg:col-span-3">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -83,20 +84,20 @@ export default function AssetList({ children }) {
                                             {asset.symbol.toUpperCase()}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            {asset.currentPrice.toFixed(2)} €
+                                            {formatNumber(asset.currentPrice)} €
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div>
-                                                {asset.invested.toFixed(2)} €
+                                                {formatNumber(asset.invested)} €
                                             </div>
                                             <div className="text-sm text-gray-500">
-                                                {asset.buyInPrice.toFixed(2)}{" "}
+                                                {formatNumber(asset.buyInPrice)}{" "}
                                                 €/share
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div>
-                                                {asset.position.toFixed(2)} €
+                                                {formatNumber(asset.position)} €
                                             </div>
                                             <div className="text-sm text-gray-500">
                                                 {asset.shares} shares
@@ -110,7 +111,8 @@ export default function AssetList({ children }) {
                                             }`}
                                         >
                                             <div>
-                                                {asset.profitLoss.toFixed(2)} €
+                                                {formatNumber(asset.profitLoss)}{" "}
+                                                €
                                             </div>
                                             <div className="text-sm">
                                                 {(
@@ -126,7 +128,7 @@ export default function AssetList({ children }) {
                             </TableBody>
                         </Table>
                     </div>
-                    <div>{children}</div>
+                    <div className="col-span-5 lg:col-span-2">{children}</div>
                 </div>
             </CardContent>
         </Card>

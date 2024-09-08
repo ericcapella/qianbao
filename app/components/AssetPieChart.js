@@ -2,8 +2,13 @@
 
 import React, { useState, useEffect } from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart"
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+} from "@/components/ui/chart"
 import { useSession } from "next-auth/react"
+import { formatNumber } from "@/lib/utils"
 
 export default function AssetPieChart() {
     const [chartData, setChartData] = useState([])
@@ -24,10 +29,15 @@ export default function AssetPieChart() {
             )
             if (response.ok) {
                 const data = await response.json()
+                const totalValue = Object.values(data.assets).reduce(
+                    (sum, asset) => sum + asset.value,
+                    0
+                )
                 const assetData = Object.entries(data.assets).map(
                     ([symbol, asset]) => ({
                         symbol,
                         value: asset.value,
+                        percentage: (asset.value / totalValue) * 100,
                     })
                 )
                 setChartData(assetData)
@@ -38,12 +48,12 @@ export default function AssetPieChart() {
     }
 
     const colors = [
-        "#FF6384",
-        "#36A2EB",
-        "#FFCE56",
-        "#4BC0C0",
-        "#9966FF",
-        "#FF9F40",
+        "hsl(var(--chart-1))",
+        "hsl(var(--chart-2))",
+        "hsl(var(--chart-3))",
+        "hsl(var(--chart-4))",
+        "hsl(var(--chart-5))",
+        "hsl(var(--chart-6))",
     ]
 
     const chartConfig = {
@@ -59,26 +69,27 @@ export default function AssetPieChart() {
         }, {}),
     }
 
+    const CustomTooltip = ({ active, payload }) => {
+        if (active && payload && payload.length) {
+            const data = payload[0].payload
+            return (
+                <div className="rounded-lg bg-background p-2 shadow-md border border-border">
+                    <p className="font-semibold">{data.symbol}</p>
+                    <p>{`${formatNumber(data.value)} €`}</p>
+                </div>
+            )
+        }
+        return null
+    }
+
     return (
-        <ChartContainer className="w-full h-[250px]" config={chartConfig}>
+        <ChartContainer
+            className="w-full h-[250px] [&_.recharts-pie-label-text]:fill-foreground"
+            config={chartConfig}
+        >
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                    <ChartTooltip
-                        content={({ payload }) => {
-                            if (payload && payload.length) {
-                                const data = payload[0].payload
-                                return (
-                                    <div className="rounded-lg bg-white p-2 shadow-md">
-                                        <div className="font-bold">
-                                            {data.symbol}
-                                        </div>
-                                        <div>{`${data.value.toFixed(2)}€`}</div>
-                                    </div>
-                                )
-                            }
-                            return null
-                        }}
-                    />
+                    <ChartTooltip content={<CustomTooltip />} />
                     <Pie
                         data={chartData}
                         dataKey="value"
@@ -88,6 +99,10 @@ export default function AssetPieChart() {
                         innerRadius={60}
                         outerRadius={80}
                         paddingAngle={5}
+                        label={({ symbol, percentage }) =>
+                            `${symbol} ${percentage.toFixed(0)}%`
+                        }
+                        labelLine={false}
                     >
                         {chartData.map((entry, index) => (
                             <Cell

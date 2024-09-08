@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select"
 import { useSession } from "next-auth/react"
 import TotalValueCard from "./TotalValueCard"
+import { formatNumber } from "@/lib/utils"
 
 export default function TotalValueChart() {
     const [chartData, setChartData] = useState([])
@@ -73,9 +74,9 @@ export default function TotalValueChart() {
                 )}`
             case "1Y":
             case "ALL":
-                return date.toLocaleString("default", {
+                return date.toLocaleString("en-US", {
                     month: "short",
-                    year: "numeric",
+                    year: "2-digit",
                 })
             default:
                 return tickItem
@@ -97,6 +98,12 @@ export default function TotalValueChart() {
             default:
                 return "preserveStartEnd"
         }
+    }
+
+    const calculateYAxisMinimum = () => {
+        if (chartData.length === 0) return 0
+        const minValue = Math.min(...chartData.map((item) => item.value))
+        return Math.floor(minValue * 0.99)
     }
 
     return (
@@ -153,11 +160,21 @@ export default function TotalValueChart() {
                             interval={getTickInterval()}
                             axisLine={true}
                             tickLine={true}
+                            style={{ fontSize: "0.8rem" }}
                         />
-                        <YAxis axisLine={true} tickLine={true} />
+                        <YAxis
+                            axisLine={true}
+                            tickLine={true}
+                            domain={[calculateYAxisMinimum(), "auto"]}
+                            tickFormatter={(value) => `${value.toFixed(0)} €`}
+                            style={{ fontSize: "0.8rem" }}
+                        />
                         <Tooltip
                             contentStyle={{ borderRadius: "8px" }}
-                            formatter={(value) => [`${value.toFixed(2)} €`, ""]}
+                            formatter={(value) => [
+                                `${formatNumber(value)} €`,
+                                "",
+                            ]}
                             labelFormatter={(value) =>
                                 new Date(value).toLocaleDateString("en-GB", {
                                     day: "2-digit",
@@ -175,6 +192,7 @@ export default function TotalValueChart() {
                             strokeWidth={3}
                             fillOpacity={1}
                             fill="url(#colorValue)"
+                            baseValue={calculateYAxisMinimum()}
                         />
                     </AreaChart>
                 </ResponsiveContainer>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useSession } from "next-auth/react"
+import { formatNumber } from "@/lib/utils"
 
 export default function TotalValueCard() {
     const [totalValue, setTotalValue] = useState(0)
@@ -33,7 +34,9 @@ export default function TotalValueCard() {
     }
     return (
         <div className="flex-1">
-            <div className="text-2xl font-bold">{totalValue.toFixed(2)} €</div>
+            <div className="text-2xl font-bold">
+                {formatNumber(totalValue)} €
+            </div>
             <div
                 className={`text-sm ${
                     variation.percentage >= 0
@@ -41,7 +44,7 @@ export default function TotalValueCard() {
                         : "text-red-500"
                 }`}
             >
-                €{Math.abs(variation.value).toFixed(2)}
+                {formatNumber(Math.abs(variation.value))}€
                 {variation.percentage >= 0 ? "▲" : "▼"}
                 {Math.abs(variation.percentage).toFixed(2)}%
             </div>
