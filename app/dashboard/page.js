@@ -11,18 +11,12 @@ import TotalValueChart from "../components/TotalValueChart"
 
 export default function Dashboard() {
     const [refreshKey, setRefreshKey] = useState(0)
-    const [assets, setAssets] = useState([])
     const { data: session, status } = useSession()
     const router = useRouter()
 
     useEffect(() => {
-        console.log("Session status:", status)
-        console.log("Session data:", session)
         if (status === "unauthenticated") {
-            console.log("Redirecting to login...")
             router.push("/login")
-        } else if (status === "authenticated" && session) {
-            console.log("Authenticated session:", session)
         }
     }, [status, router])
 
@@ -41,11 +35,10 @@ export default function Dashboard() {
     return (
         <div className="p-24">
             <AssetForm onAssetAdded={handleAssetAdded} />
-            <TotalValueChart />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <AssetList key={refreshKey} onAssetsLoaded={setAssets} />
-                <AssetPieChart assets={assets} />
-            </div>
+            <TotalValueChart key={`valuechart-${refreshKey}`} />
+            <AssetList key={`assetlist-${refreshKey}`}>
+                <AssetPieChart key={`piechart-${refreshKey}`} />
+            </AssetList>
         </div>
     )
 }
