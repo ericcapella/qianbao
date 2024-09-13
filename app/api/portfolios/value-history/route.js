@@ -30,13 +30,21 @@ export async function GET(request) {
             })
         )
 
-        const { history, totalValue, variation } = calculatePortfolioHistory(
-            transactions,
-            assetPrices,
-            timeRange
-        )
+        const {
+            history,
+            totalValue,
+            variation,
+            startValue,
+            totalInvestedInPeriod,
+        } = calculatePortfolioHistory(transactions, assetPrices, timeRange)
 
-        return NextResponse.json({ history, totalValue, variation })
+        return NextResponse.json({
+            history,
+            totalValue,
+            variation,
+            startValue,
+            totalInvestedInPeriod,
+        })
     } catch (error) {
         console.error("Error calculating portfolio value history:", error)
         return NextResponse.json(
@@ -53,26 +61,54 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
 
     transactions.sort((a, b) => new Date(a.date) - new Date(b.date))
 
+    let totalInvestedInPeriod = 0
+    let startValue = 0
+
     for (
-        let date = startDate;
+        let date = new Date(startDate);
         date <= endDate;
         date.setDate(date.getDate() + 1)
     ) {
         const value = calculatePortfolioValue(transactions, assetPrices, date)
+
+        if (portfolioHistory.length === 0) {
+            startValue = value
+        }
+
         portfolioHistory.push({
             date: date.toISOString().split("T")[0],
             value: parseFloat(value.toFixed(2)),
         })
     }
 
+    // Calculate total invested amount in the period
+    totalInvestedInPeriod = transactions
+        .filter(
+            (t) => new Date(t.date) >= startDate && new Date(t.date) <= endDate
+        )
+        .reduce((sum, t) => sum + parseFloat(t.totalPaid), 0)
+
     const totalValue = portfolioHistory[portfolioHistory.length - 1].value
-    const startValue = portfolioHistory[0].value
     const variation = {
-        value: totalValue - startValue,
-        percentage: ((totalValue - startValue) / startValue) * 100,
+        value: parseFloat(
+            (totalValue - startValue - totalInvestedInPeriod).toFixed(2)
+        ),
+        percentage: parseFloat(
+            (
+                ((totalValue - startValue - totalInvestedInPeriod) /
+                    (startValue + totalInvestedInPeriod)) *
+                100
+            ).toFixed(2)
+        ),
     }
 
-    return { history: portfolioHistory, totalValue, variation }
+    return {
+        history: portfolioHistory,
+        totalValue: parseFloat(totalValue.toFixed(2)),
+        variation,
+        startValue: parseFloat(startValue.toFixed(2)),
+        totalInvestedInPeriod: parseFloat(totalInvestedInPeriod.toFixed(2)),
+    }
 }
 
 function getStartDate(transactions, timeRange) {
@@ -84,7 +120,11 @@ function getStartDate(transactions, timeRange) {
             return new Date(now.setFullYear(now.getFullYear() - 1))
         case "ALL":
         default:
-            return new Date(transactions[0].date)
+            const oldestDate = new Date(
+                Math.min(...transactions.map((t) => new Date(t.date)))
+            )
+            oldestDate.setDate(oldestDate.getDate() - 1) // Set to one day before the oldest transaction
+            return oldestDate
     }
 }
 

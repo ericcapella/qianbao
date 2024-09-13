@@ -8,7 +8,7 @@ export default function AssetForm({ onAssetAdded }) {
     const [shares, setShares] = useState("")
     const [totalPaid, setTotalPaid] = useState("")
     const [date, setDate] = useState("")
-    const [operation, setOperation] = useState("buy")
+    const [operation, setOperation] = useState("Buy")
     const { data: session } = useSession()
 
     const handleSubmit = async (e) => {

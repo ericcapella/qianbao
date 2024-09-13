@@ -3,9 +3,9 @@ import clientPromise from "@/lib/mongodb"
 
 export async function POST(request) {
     try {
-        const { symbol, date, timeSeriesType = "DAILY" } = await request.json()
+        const { symbol, date } = await request.json()
         console.log(
-            `Received request to add/update asset: ${symbol} from date: ${date} using ${timeSeriesType} time series`
+            `Received request to add/update asset: ${symbol} from date: ${date}`
         )
 
         const client = await clientPromise
@@ -14,7 +14,8 @@ export async function POST(request) {
 
         const existingAsset = await collection.findOne({ symbol })
         const inputDate = new Date(date)
-        let shouldFetchNewData = false
+        let shouldFetchDailyData = false
+        let shouldFetchWeeklyData = false
 
         if (existingAsset) {
             console.log(`Asset ${symbol} found in database`)
@@ -22,19 +23,27 @@ export async function POST(request) {
             const mostRecentDate = new Date(
                 Math.max(...priceDates.map((d) => new Date(d)))
             )
+            const oldestDate = new Date(
+                Math.min(...priceDates.map((d) => new Date(d)))
+            )
             const twoDaysAgo = new Date()
             twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
 
-            if (
-                mostRecentDate < twoDaysAgo ||
-                inputDate <
-                    new Date(Math.min(...priceDates.map((d) => new Date(d))))
-            ) {
+            if (mostRecentDate < twoDaysAgo) {
                 console.log(
-                    `Asset ${symbol} data needs updating. Fetching new data from Alpha Vantage.`
+                    `Asset ${symbol} data needs updating with recent prices. Fetching DAILY data from Alpha Vantage.`
                 )
-                shouldFetchNewData = true
-            } else {
+                shouldFetchDailyData = true
+            }
+
+            if (inputDate < oldestDate) {
+                console.log(
+                    `Asset ${symbol} data needs updating with older prices. Fetching WEEKLY data from Alpha Vantage.`
+                )
+                shouldFetchWeeklyData = true
+            }
+
+            if (!shouldFetchDailyData && !shouldFetchWeeklyData) {
                 console.log(
                     `Asset ${symbol} data is up to date. No need to fetch from Alpha Vantage.`
                 )
@@ -45,74 +54,58 @@ export async function POST(request) {
             }
         } else {
             console.log(
-                `Asset ${symbol} not found in database. Fetching data from Alpha Vantage.`
+                `Asset ${symbol} not found in database. Fetching both DAILY and WEEKLY data from Alpha Vantage.`
             )
-            shouldFetchNewData = true
+            shouldFetchDailyData = true
+            shouldFetchWeeklyData = true
         }
 
-        if (shouldFetchNewData) {
-            const apiKey = process.env.ALPHA_VANTAGE_API_KEY
-            const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_${timeSeriesType}&symbol=${symbol}&apikey=${apiKey}`
+        let updatedPrices = existingAsset ? { ...existingAsset.prices } : {}
 
-            console.log(`Fetching data from Alpha Vantage for ${symbol}`)
-            const response = await fetch(apiUrl)
-            const data = await response.json()
-
-            if (data["Error Message"]) {
-                console.log(
-                    `Error from Alpha Vantage: ${data["Error Message"]}`
-                )
-                return NextResponse.json(
-                    { error: "Invalid symbol" },
-                    { status: 400 }
-                )
-            }
-
-            // Correct the key name based on the timeSeriesType
-            const timeSeriesKey =
-                timeSeriesType === "DAILY"
-                    ? "Time Series (Daily)"
-                    : "Weekly Time Series"
-            const timeSeries = data[timeSeriesKey]
-
-            if (!timeSeries) {
-                console.log(`No time series data found for ${symbol}`)
-                return NextResponse.json(
-                    { error: "No data available for this symbol" },
-                    { status: 404 }
-                )
-            }
-
-            const lastRefreshed = data["Meta Data"]["3. Last Refreshed"]
-            let prices = existingAsset ? existingAsset.prices : {}
-
-            for (const [dateStr, values] of Object.entries(timeSeries)) {
-                const currentDate = new Date(dateStr)
-                if (currentDate >= inputDate && !prices[dateStr]) {
-                    prices[dateStr] = values["4. close"]
-                }
-            }
-
-            // Sort prices by date in descending order
-            prices = Object.fromEntries(
-                Object.entries(prices).sort(
-                    (a, b) => new Date(b[0]) - new Date(a[0])
-                )
+        if (shouldFetchDailyData) {
+            const dailyData = await fetchAlphaVantageData(
+                symbol,
+                "DAILY",
+                inputDate
             )
+            updatedPrices = mergePrices(updatedPrices, dailyData)
+        }
 
-            await collection.updateOne(
-                { symbol },
-                {
-                    $set: {
-                        symbol,
-                        lastRefreshed,
-                        prices,
-                    },
+        if (shouldFetchWeeklyData) {
+            const weeklyData = await fetchAlphaVantageData(
+                symbol,
+                "WEEKLY",
+                inputDate
+            )
+            updatedPrices = mergePrices(updatedPrices, weeklyData)
+        }
+
+        // Filter out any prices older than the input date
+        updatedPrices = Object.fromEntries(
+            Object.entries(updatedPrices).filter(
+                ([dateStr]) => new Date(dateStr) >= inputDate
+            )
+        )
+
+        // Sort prices by date in descending order
+        updatedPrices = Object.fromEntries(
+            Object.entries(updatedPrices).sort(
+                (a, b) => new Date(b[0]) - new Date(a[0])
+            )
+        )
+
+        await collection.updateOne(
+            { symbol },
+            {
+                $set: {
+                    symbol,
+                    lastRefreshed: new Date(),
+                    prices: updatedPrices,
                 },
-                { upsert: true }
-            )
-            console.log(`Asset ${symbol} data updated in database`)
-        }
+            },
+            { upsert: true }
+        )
+        console.log(`Asset ${symbol} data updated in database`)
 
         return NextResponse.json(
             { message: "Asset data updated successfully" },
@@ -125,6 +118,44 @@ export async function POST(request) {
             { status: 500 }
         )
     }
+}
+
+async function fetchAlphaVantageData(symbol, timeSeriesType, inputDate) {
+    const apiKey = process.env.ALPHA_VANTAGE_API_KEY
+    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_${timeSeriesType}&symbol=${symbol}&apikey=${apiKey}`
+
+    console.log(
+        `Fetching ${timeSeriesType} data from Alpha Vantage for ${symbol}`
+    )
+    const response = await fetch(apiUrl)
+    const data = await response.json()
+
+    if (data["Error Message"]) {
+        console.log(`Error from Alpha Vantage: ${data["Error Message"]}`)
+        throw new Error("Invalid symbol")
+    }
+
+    const timeSeriesKey =
+        timeSeriesType === "DAILY"
+            ? "Time Series (Daily)"
+            : "Weekly Time Series"
+    const timeSeries = data[timeSeriesKey]
+
+    if (!timeSeries) {
+        console.log(`No time series data found for ${symbol}`)
+        throw new Error("No data available for this symbol")
+    }
+
+    return Object.entries(timeSeries).reduce((acc, [dateStr, values]) => {
+        if (new Date(dateStr) >= inputDate) {
+            acc[dateStr] = values["4. close"]
+        }
+        return acc
+    }, {})
+}
+
+function mergePrices(existingPrices, newPrices) {
+    return { ...existingPrices, ...newPrices }
 }
 
 export async function GET(request) {

@@ -5,40 +5,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useSession } from "next-auth/react"
 import { formatNumber } from "@/lib/utils"
 
-export default function TotalValueCard() {
-    const [totalValue, setTotalValue] = useState(0)
-    const [variation, setVariation] = useState({ percentage: 0, value: 0 })
+export default function TotalValueCard({
+    totalValue,
+    variation,
+    startValue,
+    totalInvestedInPeriod,
+}) {
     const { data: session, status } = useSession()
 
-    useEffect(() => {
-        if (status === "authenticated" && session?.user?.email) {
-            fetchTotalValue()
-        }
-    }, [status, session?.user?.email])
-
-    const fetchTotalValue = async () => {
-        try {
-            const response = await fetch(
-                `/api/portfolios/total-value?userEmail=${encodeURIComponent(
-                    session.user.email
-                )}`
-            )
-            if (response.ok) {
-                const data = await response.json()
-                setTotalValue(data.totalValue)
-                setVariation(data.variation)
-            }
-        } catch (error) {
-            console.error("Error fetching total value:", error)
-        }
+    if (status === "loading") {
+        return <div>Loading...</div>
     }
+
+    if (status === "unauthenticated") {
+        return null
+    }
+
     return (
-        <div className="flex-1">
-            <div className="text-2xl font-bold">
-                {formatNumber(totalValue)} €
-            </div>
+        <div className="flex flex-col">
+            <CardTitle className="text-2xl font-bold">
+                {formatNumber(totalValue)}€
+            </CardTitle>
             <div
-                className={`text-sm ${
+                className={`text-sm font-medium ${
                     variation.percentage >= 0
                         ? "text-green-500"
                         : "text-red-500"
@@ -47,6 +36,9 @@ export default function TotalValueCard() {
                 {formatNumber(Math.abs(variation.value))}€
                 {variation.percentage >= 0 ? "▲" : "▼"}
                 {Math.abs(variation.percentage).toFixed(2)}%
+            </div>
+            <div className="text-xs text-gray-500">
+                {formatNumber(totalInvestedInPeriod)}€ invested
             </div>
         </div>
     )

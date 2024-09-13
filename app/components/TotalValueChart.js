@@ -33,6 +33,8 @@ export default function TotalValueChart() {
     const [timeRange, setTimeRange] = useState("1Y")
     const [totalValue, setTotalValue] = useState(0)
     const [variation, setVariation] = useState({ percentage: 0, value: 0 })
+    const [startValue, setStartValue] = useState(0)
+    const [totalInvestedInPeriod, setTotalInvestedInPeriod] = useState(0)
     const { data: session, status } = useSession()
 
     useEffect(() => {
@@ -53,6 +55,8 @@ export default function TotalValueChart() {
                 setChartData(data.history)
                 setTotalValue(data.totalValue)
                 setVariation(data.variation)
+                setStartValue(data.startValue)
+                setTotalInvestedInPeriod(data.totalInvestedInPeriod)
             }
         } catch (error) {
             console.error("Error fetching chart data:", error)
@@ -109,7 +113,12 @@ export default function TotalValueChart() {
     return (
         <Card>
             <CardHeader className="flex items-center gap-2 space-y-0 py-5 sm:flex-row">
-                <TotalValueCard totalValue={totalValue} variation={variation} />
+                <TotalValueCard
+                    totalValue={totalValue}
+                    variation={variation}
+                    startValue={startValue}
+                    totalInvestedInPeriod={totalInvestedInPeriod}
+                />
                 <Select value={timeRange} onValueChange={setTimeRange}>
                     <SelectTrigger
                         className="w-[160px] rounded-lg sm:ml-auto"
