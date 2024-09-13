@@ -31,10 +31,15 @@ import {
 const formatDate = (date) => {
     if (!date) return ""
     const d = new Date(date)
-    const month = d.toLocaleString("default", { month: "short" })
-    const day = d.getDate()
+    const day = String(d.getDate()).padStart(2, "0")
+    const month = String(d.getMonth() + 1).padStart(2, "0")
     const year = d.getFullYear()
-    return `${month} ${day}, ${year}`
+    return `${day}-${month}-${year}`
+}
+
+const getUniqueYears = (transactions) => {
+    const years = transactions.map((t) => new Date(t.date).getFullYear())
+    return [...new Set(years)].sort((a, b) => a - b) // Sort in ascending order
 }
 
 export default function TransactionList() {
@@ -44,6 +49,7 @@ export default function TransactionList() {
     const [selectedAsset, setSelectedAsset] = useState(null)
     const [dateRange, setDateRange] = useState({ from: null, to: null })
     const { data: session, status } = useSession()
+    const [availableYears, setAvailableYears] = useState([])
 
     useEffect(() => {
         if (status === "authenticated" && session?.user?.email) {
@@ -64,6 +70,7 @@ export default function TransactionList() {
                 setFilteredTransactions(data)
                 const uniqueAssets = [...new Set(data.map((t) => t.symbol))]
                 setAssets(uniqueAssets)
+                setAvailableYears(getUniqueYears(data))
             }
         } catch (error) {
             console.error("Error fetching transactions:", error)
@@ -79,12 +86,17 @@ export default function TransactionList() {
             filtered = filtered.filter((t) => {
                 const transactionDate = new Date(t.date)
                 return (
-                    transactionDate >= new Date(dateRange.from) &&
-                    transactionDate <= new Date(dateRange.to)
+                    transactionDate >= dateRange.from &&
+                    transactionDate <= dateRange.to
                 )
             })
         }
         setFilteredTransactions(filtered)
+    }
+    const handleYearSelect = (year) => {
+        const from = new Date(year, 0, 1) // January 1st
+        const to = new Date(year, 11, 31) // December 31st
+        setDateRange({ from, to })
     }
 
     useEffect(() => {
@@ -126,14 +138,19 @@ export default function TransactionList() {
                                 }`}
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dateRange.from ? (
-                                    dateRange.to ? (
+                                {dateRange.from && dateRange.to ? (
+                                    dateRange.from.getFullYear() ===
+                                        dateRange.to.getFullYear() &&
+                                    dateRange.from.getMonth() === 0 &&
+                                    dateRange.to.getMonth() === 11 &&
+                                    dateRange.from.getDate() === 1 &&
+                                    dateRange.to.getDate() === 31 ? (
+                                        `Year ${dateRange.from.getFullYear()}`
+                                    ) : (
                                         <>
                                             {formatDate(dateRange.from)} -{" "}
                                             {formatDate(dateRange.to)}
                                         </>
-                                    ) : (
-                                        formatDate(dateRange.from)
                                     )
                                 ) : (
                                     <span>Pick a date range</span>
@@ -141,6 +158,18 @@ export default function TransactionList() {
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
+                            <div className="p-2 flex flex-wrap gap-2">
+                                {availableYears.map((year) => (
+                                    <Button
+                                        key={year}
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleYearSelect(year)}
+                                    >
+                                        {year}
+                                    </Button>
+                                ))}
+                            </div>
                             <Calendar
                                 initialFocus
                                 mode="range"
@@ -186,13 +215,7 @@ export default function TransactionList() {
                     <TableBody>
                         {filteredTransactions.map((transaction) => (
                             <TableRow key={transaction._id}>
-                                <TableCell
-                                    style={{
-                                        color: getOperationColor(
-                                            transaction.operation
-                                        ),
-                                    }}
-                                >
+                                <TableCell>
                                     {transaction.operation || "Buy"}
                                 </TableCell>
                                 <TableCell>
