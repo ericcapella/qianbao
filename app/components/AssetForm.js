@@ -8,6 +8,7 @@ export default function AssetForm({ onAssetAdded }) {
     const [shares, setShares] = useState("")
     const [totalPaid, setTotalPaid] = useState("")
     const [date, setDate] = useState("")
+    const [operation, setOperation] = useState("buy")
     const { data: session } = useSession()
 
     const handleSubmit = async (e) => {
@@ -32,8 +33,8 @@ export default function AssetForm({ onAssetAdded }) {
             }
 
             // Then, add the transaction
-            const transactionResponse = await fetch("/api/assets", {
-                method: "PUT",
+            const transactionResponse = await fetch("/api/transactions", {
+                method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -43,6 +44,7 @@ export default function AssetForm({ onAssetAdded }) {
                     shares: parseFloat(shares),
                     totalPaid: parseFloat(totalPaid),
                     userEmail: session.user.email,
+                    operation,
                 }),
             })
 
@@ -93,6 +95,23 @@ export default function AssetForm({ onAssetAdded }) {
                 required
                 className="mr-2 p-2 border rounded"
             />
+            <div className="mb-4">
+                <label
+                    htmlFor="operation"
+                    className="block text-sm font-medium text-gray-700"
+                >
+                    Operation
+                </label>
+                <select
+                    id="operation"
+                    value={operation}
+                    onChange={(e) => setOperation(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                >
+                    <option value="buy">Buy</option>
+                    <option value="sell">Sell</option>
+                </select>
+            </div>
             <button
                 type="submit"
                 className="bg-blue-500 text-white p-2 rounded"

@@ -159,20 +159,37 @@ export async function GET(request) {
 
 export async function PUT(request) {
     try {
-        const { symbol, date, shares, totalPaid, userEmail } =
+        const { symbol, date, shares, totalPaid, userEmail, operation } =
             await request.json()
         const client = await clientPromise
         const db = client.db("stocktracker")
         const transactionsCollection = db.collection("transactions")
         const portfoliosCollection = db.collection("portfolios")
 
-        await transactionsCollection.insertOne({
+        if (
+            !symbol ||
+            !date ||
+            !shares ||
+            !totalPaid ||
+            !userEmail ||
+            !operation
+        ) {
+            return NextResponse.json(
+                { error: "All fields are required" },
+                { status: 400 }
+            )
+        }
+
+        const newTransaction = {
             symbol,
             date,
             shares,
             totalPaid,
             userEmail,
-        })
+            operation,
+        }
+
+        await transactionsCollection.insertOne(newTransaction)
 
         const portfolio = await portfoliosCollection.findOne({ userEmail })
         let updatedAsset = {

@@ -8,6 +8,7 @@ import AssetList from "../components/AssetList"
 import AssetPieChart from "../components/AssetPieChart"
 import TotalValueCard from "../components/TotalValueCard"
 import TotalValueChart from "../components/TotalValueChart"
+import TransactionsList from "../components/TransactionsList"
 
 export default function Dashboard() {
     const [refreshKey, setRefreshKey] = useState(0)
@@ -39,6 +40,7 @@ export default function Dashboard() {
             <AssetList key={`assetlist-${refreshKey}`}>
                 <AssetPieChart key={`piechart-${refreshKey}`} />
             </AssetList>
+            <TransactionsList key={`transactionlist-${refreshKey}`} />
         </div>
     )
 }
