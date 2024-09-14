@@ -33,7 +33,7 @@ export default function TotalValueCard({
                         : "text-red-500"
                 }`}
             >
-                {formatNumber(Math.abs(variation.value))}€
+                {formatNumber(Math.abs(variation.value))}€&nbsp;&nbsp;
                 {variation.percentage >= 0 ? "▲" : "▼"}
                 {Math.abs(variation.percentage).toFixed(2)}%
             </div>

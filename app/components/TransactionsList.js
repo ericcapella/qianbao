@@ -158,7 +158,7 @@ export default function TransactionList() {
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                            <div className="p-2 flex flex-wrap gap-2">
+                            <div className="p-2 flex flex-wrap gap-2 justify-end">
                                 {availableYears.map((year) => (
                                     <Button
                                         key={year}
