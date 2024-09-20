@@ -44,13 +44,18 @@ const getUniqueYears = (transactions) => {
 
 export default function TransactionList() {
     const [transactions, setTransactions] = useState([])
-    const { data: session } = useSession()
+    const [filteredTransactions, setFilteredTransactions] = useState([])
+    const [assets, setAssets] = useState([])
+    const [selectedAsset, setSelectedAsset] = useState(null)
+    const [dateRange, setDateRange] = useState({ from: null, to: null })
+    const { data: session, status } = useSession()
+    const [availableYears, setAvailableYears] = useState([])
 
     useEffect(() => {
-        if (session?.user?.email) {
+        if (status === "authenticated" && session?.user?.email) {
             fetchTransactions()
         }
-    }, [session?.user?.email])
+    }, [status, session?.user?.email])
 
     const fetchTransactions = async () => {
         try {
@@ -62,16 +67,132 @@ export default function TransactionList() {
             if (response.ok) {
                 const data = await response.json()
                 setTransactions(data)
+                setFilteredTransactions(data)
+                const uniqueAssets = [...new Set(data.map((t) => t.symbol))]
+                setAssets(uniqueAssets)
+                setAvailableYears(getUniqueYears(data))
             }
         } catch (error) {
             console.error("Error fetching transactions:", error)
         }
     }
 
+    const applyFilters = () => {
+        let filtered = transactions
+        if (selectedAsset) {
+            filtered = filtered.filter((t) => t.symbol === selectedAsset)
+        }
+        if (dateRange.from && dateRange.to) {
+            filtered = filtered.filter((t) => {
+                const transactionDate = new Date(t.date)
+                return (
+                    transactionDate >= dateRange.from &&
+                    transactionDate <= dateRange.to
+                )
+            })
+        }
+        setFilteredTransactions(filtered)
+    }
+
+    const handleYearSelect = (year) => {
+        const from = new Date(year, 0, 1) // January 1st
+        const to = new Date(year, 11, 31) // December 31st
+        setDateRange({ from, to })
+    }
+
+    useEffect(() => {
+        applyFilters()
+    }, [selectedAsset, dateRange, transactions])
+
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Transaction History</CardTitle>
+        <Card className="my-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="flex items-center space-x-2">
+                    <CardTitle>Transaction History</CardTitle>
+                </div>
+                <div className="flex space-x-2">
+                    {(selectedAsset || dateRange.from || dateRange.to) && (
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setSelectedAsset(null)
+                                setDateRange({ from: null, to: null })
+                            }}
+                            className="ml-2"
+                        >
+                            Clear Filters
+                        </Button>
+                    )}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={"outline"}
+                                className={`w-[300px] justify-start text-left font-normal ${
+                                    !dateRange.from &&
+                                    !dateRange.to &&
+                                    "text-muted-foreground"
+                                }`}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dateRange.from && dateRange.to ? (
+                                    dateRange.from.getFullYear() ===
+                                        dateRange.to.getFullYear() &&
+                                    dateRange.from.getMonth() === 0 &&
+                                    dateRange.to.getMonth() === 11 &&
+                                    dateRange.from.getDate() === 1 &&
+                                    dateRange.to.getDate() === 31 ? (
+                                        `Year ${dateRange.from.getFullYear()}`
+                                    ) : (
+                                        <>
+                                            {formatDate(dateRange.from)} -{" "}
+                                            {formatDate(dateRange.to)}
+                                        </>
+                                    )
+                                ) : (
+                                    <span>Pick a date range</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <div className="p-2 flex flex-wrap gap-2 justify-end">
+                                {availableYears.map((year) => (
+                                    <Button
+                                        key={year}
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleYearSelect(year)}
+                                    >
+                                        {year}
+                                    </Button>
+                                ))}
+                            </div>
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={dateRange.from}
+                                selected={dateRange}
+                                onSelect={setDateRange}
+                                numberOfMonths={2}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                    <Select
+                        value={selectedAsset}
+                        onValueChange={setSelectedAsset}
+                    >
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select asset" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={null}>All assets</SelectItem>
+                            {assets.map((asset) => (
+                                <SelectItem key={asset} value={asset}>
+                                    {asset}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -89,7 +210,7 @@ export default function TransactionList() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {transactions.map((transaction) => (
+                        {filteredTransactions.map((transaction) => (
                             <TableRow key={transaction._id}>
                                 <TableCell>{transaction.operation}</TableCell>
                                 <TableCell>
