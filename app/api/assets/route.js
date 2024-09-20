@@ -4,113 +4,73 @@ import clientPromise from "@/lib/mongodb"
 export async function POST(request) {
     try {
         const { symbol, date } = await request.json()
-        console.log(
-            `Received request to add/update asset: ${symbol} from date: ${date}`
-        )
-
         const client = await clientPromise
         const db = client.db("stocktracker")
-        const collection = db.collection("assets")
+        const assetsCollection = db.collection("assets")
 
-        const existingAsset = await collection.findOne({ symbol })
+        const existingAsset = await assetsCollection.findOne({ symbol })
         const inputDate = new Date(date)
-        let shouldFetchDailyData = false
-        let shouldFetchWeeklyData = false
+        const twoDaysAgo = new Date()
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
 
-        if (existingAsset) {
-            console.log(`Asset ${symbol} found in database`)
-            const priceDates = Object.keys(existingAsset.prices)
-            const mostRecentDate = new Date(
-                Math.max(...priceDates.map((d) => new Date(d)))
-            )
-            const oldestDate = new Date(
-                Math.min(...priceDates.map((d) => new Date(d)))
-            )
-            const twoDaysAgo = new Date()
-            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+        let prices = existingAsset ? existingAsset.prices : {}
+        let needsUpdate = false
 
-            if (mostRecentDate < twoDaysAgo) {
-                console.log(
-                    `Asset ${symbol} data needs updating with recent prices. Fetching DAILY data from Alpha Vantage.`
-                )
-                shouldFetchDailyData = true
-            }
-
-            if (inputDate < oldestDate) {
-                console.log(
-                    `Asset ${symbol} data needs updating with older prices. Fetching WEEKLY data from Alpha Vantage.`
-                )
-                shouldFetchWeeklyData = true
-            }
-
-            if (!shouldFetchDailyData && !shouldFetchWeeklyData) {
-                console.log(
-                    `Asset ${symbol} data is up to date. No need to fetch from Alpha Vantage.`
-                )
-                return NextResponse.json(
-                    { message: "Asset data is up to date" },
-                    { status: 200 }
-                )
-            }
+        if (
+            !existingAsset ||
+            !existingAsset.prices ||
+            Object.keys(existingAsset.prices).length === 0
+        ) {
+            needsUpdate = true
         } else {
-            console.log(
-                `Asset ${symbol} not found in database. Fetching both DAILY and WEEKLY data from Alpha Vantage.`
+            const mostRecentDate = new Date(
+                Math.max(
+                    ...Object.keys(existingAsset.prices).map(
+                        (date) => new Date(date)
+                    )
+                )
             )
-            shouldFetchDailyData = true
-            shouldFetchWeeklyData = true
+            if (mostRecentDate < twoDaysAgo) {
+                needsUpdate = true
+            }
+
+            const oldestDate = new Date(
+                Math.min(
+                    ...Object.keys(existingAsset.prices).map(
+                        (date) => new Date(date)
+                    )
+                )
+            )
+            if (inputDate < oldestDate) {
+                needsUpdate = true
+            }
         }
 
-        let updatedPrices = existingAsset ? { ...existingAsset.prices } : {}
-
-        if (shouldFetchDailyData) {
-            const dailyData = await fetchAlphaVantageData(
+        if (needsUpdate) {
+            const timeSeriesType = inputDate < twoDaysAgo ? "WEEKLY" : "DAILY"
+            const newPrices = await fetchPricesFromAlphaVantage(
                 symbol,
-                "DAILY",
+                timeSeriesType,
                 inputDate
             )
-            updatedPrices = mergePrices(updatedPrices, dailyData)
+            prices = mergePrices(prices, newPrices)
         }
 
-        if (shouldFetchWeeklyData) {
-            const weeklyData = await fetchAlphaVantageData(
-                symbol,
-                "WEEKLY",
-                inputDate
-            )
-            updatedPrices = mergePrices(updatedPrices, weeklyData)
-        }
-
-        // Filter out any prices older than the input date
-        updatedPrices = Object.fromEntries(
-            Object.entries(updatedPrices).filter(
-                ([dateStr]) => new Date(dateStr) >= inputDate
-            )
-        )
-
-        // Sort prices by date in descending order
-        updatedPrices = Object.fromEntries(
-            Object.entries(updatedPrices).sort(
-                (a, b) => new Date(b[0]) - new Date(a[0])
-            )
-        )
-
-        await collection.updateOne(
+        await assetsCollection.updateOne(
             { symbol },
             {
                 $set: {
                     symbol,
+                    prices,
                     lastRefreshed: new Date(),
-                    prices: updatedPrices,
                 },
             },
             { upsert: true }
         )
-        console.log(`Asset ${symbol} data updated in database`)
 
-        return NextResponse.json(
-            { message: "Asset data updated successfully" },
-            { status: 200 }
-        )
+        return NextResponse.json({
+            message: "Asset added/updated successfully",
+        })
     } catch (error) {
         console.error("Error adding/updating asset:", error)
         return NextResponse.json(
@@ -120,7 +80,20 @@ export async function POST(request) {
     }
 }
 
-async function fetchAlphaVantageData(symbol, timeSeriesType, inputDate) {
+function mergePrices(existingPrices, newPrices) {
+    const mergedPrices = { ...existingPrices }
+    for (const [date, price] of Object.entries(newPrices)) {
+        if (
+            !mergedPrices[date] ||
+            new Date(date) > new Date(Object.keys(existingPrices)[0])
+        ) {
+            mergedPrices[date] = price
+        }
+    }
+    return mergedPrices
+}
+
+async function fetchPricesFromAlphaVantage(symbol, timeSeriesType, inputDate) {
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY
     const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_${timeSeriesType}&symbol=${symbol}&apikey=${apiKey}`
 
@@ -152,10 +125,6 @@ async function fetchAlphaVantageData(symbol, timeSeriesType, inputDate) {
         }
         return acc
     }, {})
-}
-
-function mergePrices(existingPrices, newPrices) {
-    return { ...existingPrices, ...newPrices }
 }
 
 export async function GET(request) {
