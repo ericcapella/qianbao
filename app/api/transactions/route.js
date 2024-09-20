@@ -22,10 +22,15 @@ export async function GET(request) {
             .sort({ date: -1 })
             .toArray()
 
+        const formattedTransactions = transactions.map((t) => ({
+            ...t,
+            pnl: t.operation === "sell" ? t.pnl : undefined,
+        }))
+
         console.log(
-            `Found ${transactions.length} transactions for ${userEmail}`
+            `Found ${formattedTransactions.length} transactions for ${userEmail}`
         )
-        return NextResponse.json(transactions)
+        return NextResponse.json(formattedTransactions)
     } catch (error) {
         console.error("Error fetching transactions:", error)
         return NextResponse.json(

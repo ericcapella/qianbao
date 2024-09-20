@@ -6,9 +6,9 @@ import { useSession } from "next-auth/react"
 export default function AssetForm({ onAssetAdded }) {
     const [symbol, setSymbol] = useState("")
     const [shares, setShares] = useState("")
-    const [totalPaid, setTotalPaid] = useState("")
+    const [totalAmount, setTotalAmount] = useState("")
     const [date, setDate] = useState("")
-    const [operation, setOperation] = useState("Buy")
+    const [operation, setOperation] = useState("buy")
     const { data: session } = useSession()
 
     const handleSubmit = async (e) => {
@@ -42,23 +42,25 @@ export default function AssetForm({ onAssetAdded }) {
                     symbol,
                     date,
                     shares: parseFloat(shares),
-                    totalPaid: parseFloat(totalPaid),
+                    totalAmount: parseFloat(totalAmount),
                     userEmail: session.user.email,
                     operation,
                 }),
             })
 
             if (!transactionResponse.ok) {
-                throw new Error("Failed to add transaction")
+                const errorData = await transactionResponse.json()
+                throw new Error(errorData.error || "Failed to add transaction")
             }
 
             onAssetAdded()
             setSymbol("")
             setShares("")
-            setTotalPaid("")
+            setTotalAmount("")
             setDate("")
         } catch (error) {
             console.error("Error adding asset:", error)
+            alert(error.message)
         }
     }
 
@@ -82,9 +84,11 @@ export default function AssetForm({ onAssetAdded }) {
             />
             <input
                 type="number"
-                value={totalPaid}
-                onChange={(e) => setTotalPaid(e.target.value)}
-                placeholder="Total Paid"
+                value={totalAmount}
+                onChange={(e) => setTotalAmount(e.target.value)}
+                placeholder={
+                    operation === "buy" ? "Total Paid" : "Total Received"
+                }
                 required
                 className="mr-2 p-2 border rounded"
             />
@@ -108,15 +112,15 @@ export default function AssetForm({ onAssetAdded }) {
                     onChange={(e) => setOperation(e.target.value)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                 >
-                    <option value="Buy">Buy</option>
-                    <option value="Sell">Sell</option>
+                    <option value="buy">Buy</option>
+                    <option value="sell">Sell</option>
                 </select>
             </div>
             <button
                 type="submit"
-                className="bg-blue-500 text-white p-2 rounded"
+                className="p-2 bg-blue-500 text-white rounded"
             >
-                Add Asset
+                Add Transaction
             </button>
         </form>
     )

@@ -19,8 +19,24 @@ export async function POST(request) {
                     {
                         $group: {
                             _id: "$symbol",
-                            totalShares: { $sum: "$shares" },
-                            totalPaid: { $sum: "$totalPaid" },
+                            totalShares: {
+                                $sum: {
+                                    $cond: [
+                                        { $eq: ["$operation", "buy"] },
+                                        "$shares",
+                                        { $multiply: ["$shares", -1] },
+                                    ],
+                                },
+                            },
+                            totalPaid: {
+                                $sum: {
+                                    $cond: [
+                                        { $eq: ["$operation", "buy"] },
+                                        "$totalPaid",
+                                        { $multiply: ["$totalReceived", -1] },
+                                    ],
+                                },
+                            },
                         },
                     },
                 ])
@@ -29,10 +45,12 @@ export async function POST(request) {
             // Convert the array to an object with the new structure
             const assets = userPortfolio.reduce(
                 (acc, { _id, totalShares, totalPaid }) => {
-                    acc[_id] = {
-                        shares: totalShares,
-                        totalPaid,
-                        paidPerShare: totalPaid / totalShares,
+                    if (totalShares > 0) {
+                        acc[_id] = {
+                            shares: totalShares,
+                            totalPaid,
+                            paidPerShare: totalPaid / totalShares,
+                        }
                     }
                     return acc
                 },
@@ -52,10 +70,9 @@ export async function POST(request) {
             )
         }
 
-        return NextResponse.json(
-            { message: "Portfolios recalculated successfully" },
-            { status: 200 }
-        )
+        return NextResponse.json({
+            message: "Portfolios recalculated successfully",
+        })
     } catch (error) {
         console.error("Error recalculating portfolios:", error)
         return NextResponse.json(

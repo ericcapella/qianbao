@@ -36,6 +36,7 @@ export async function GET(request) {
             variation,
             startValue,
             totalInvestedInPeriod,
+            totalSoldInPeriod,
         } = calculatePortfolioHistory(transactions, assetPrices, timeRange)
 
         return NextResponse.json({
@@ -44,6 +45,7 @@ export async function GET(request) {
             variation,
             startValue,
             totalInvestedInPeriod,
+            totalSoldInPeriod,
         })
     } catch (error) {
         console.error("Error calculating portfolio value history:", error)
@@ -62,6 +64,7 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
     transactions.sort((a, b) => new Date(a.date) - new Date(b.date))
 
     let totalInvestedInPeriod = 0
+    let totalSoldInPeriod = 0
     let startValue = 0
 
     for (
@@ -81,22 +84,36 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
         })
     }
 
-    // Calculate total invested amount in the period
-    totalInvestedInPeriod = transactions
+    // Calculate total invested and sold amounts in the period
+    transactions
         .filter(
             (t) => new Date(t.date) >= startDate && new Date(t.date) <= endDate
         )
-        .reduce((sum, t) => sum + parseFloat(t.totalPaid), 0)
+        .forEach((t) => {
+            if (t.operation === "buy") {
+                totalInvestedInPeriod += parseFloat(t.totalPaid)
+            } else if (t.operation === "sell") {
+                totalSoldInPeriod += parseFloat(t.totalReceived)
+            }
+        })
 
     const totalValue = portfolioHistory[portfolioHistory.length - 1].value
     const variation = {
         value: parseFloat(
-            (totalValue - startValue - totalInvestedInPeriod).toFixed(2)
+            (
+                totalValue -
+                startValue -
+                totalInvestedInPeriod +
+                totalSoldInPeriod
+            ).toFixed(2)
         ),
         percentage: parseFloat(
             (
-                ((totalValue - startValue - totalInvestedInPeriod) /
-                    (startValue + totalInvestedInPeriod)) *
+                ((totalValue -
+                    startValue -
+                    totalInvestedInPeriod +
+                    totalSoldInPeriod) /
+                    (startValue + totalInvestedInPeriod - totalSoldInPeriod)) *
                 100
             ).toFixed(2)
         ),
@@ -108,6 +125,7 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
         variation,
         startValue: parseFloat(startValue.toFixed(2)),
         totalInvestedInPeriod: parseFloat(totalInvestedInPeriod.toFixed(2)),
+        totalSoldInPeriod: parseFloat(totalSoldInPeriod.toFixed(2)),
     }
 }
 
@@ -135,7 +153,11 @@ function calculatePortfolioValue(transactions, assetPrices, date) {
             if (!portfolio[transaction.symbol]) {
                 portfolio[transaction.symbol] = 0
             }
-            portfolio[transaction.symbol] += transaction.shares
+            if (transaction.operation === "buy") {
+                portfolio[transaction.symbol] += parseFloat(transaction.shares)
+            } else if (transaction.operation === "sell") {
+                portfolio[transaction.symbol] -= parseFloat(transaction.shares)
+            }
         }
     }
 

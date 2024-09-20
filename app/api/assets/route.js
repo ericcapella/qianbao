@@ -190,7 +190,7 @@ export async function GET(request) {
 
 export async function PUT(request) {
     try {
-        const { symbol, date, shares, totalPaid, userEmail, operation } =
+        const { symbol, date, shares, totalAmount, userEmail, operation } =
             await request.json()
         const client = await clientPromise
         const db = client.db("stocktracker")
@@ -201,7 +201,7 @@ export async function PUT(request) {
             !symbol ||
             !date ||
             !shares ||
-            !totalPaid ||
+            !totalAmount ||
             !userEmail ||
             !operation
         ) {
@@ -211,56 +211,189 @@ export async function PUT(request) {
             )
         }
 
-        const newTransaction = {
-            symbol,
-            date,
-            shares,
-            totalPaid,
-            userEmail,
-            operation,
+        if (operation === "buy") {
+            return handleBuyTransaction(
+                symbol,
+                date,
+                shares,
+                totalAmount,
+                userEmail,
+                transactionsCollection,
+                portfoliosCollection
+            )
+        } else if (operation === "sell") {
+            return handleSellTransaction(
+                symbol,
+                date,
+                shares,
+                totalAmount,
+                userEmail,
+                transactionsCollection,
+                portfoliosCollection
+            )
+        } else {
+            return NextResponse.json(
+                { error: "Invalid operation" },
+                { status: 400 }
+            )
         }
-
-        await transactionsCollection.insertOne(newTransaction)
-
-        const portfolio = await portfoliosCollection.findOne({ userEmail })
-        let updatedAsset = {
-            shares: parseFloat(shares),
-            totalPaid: parseFloat(totalPaid),
-            paidPerShare: parseFloat(totalPaid) / parseFloat(shares),
-        }
-
-        if (portfolio && portfolio.assets && portfolio.assets[symbol]) {
-            const existingAsset = portfolio.assets[symbol]
-            updatedAsset = {
-                shares: existingAsset.shares + parseFloat(shares),
-                totalPaid: existingAsset.totalPaid + parseFloat(totalPaid),
-                paidPerShare:
-                    (existingAsset.totalPaid + parseFloat(totalPaid)) /
-                    (existingAsset.shares + parseFloat(shares)),
-            }
-        }
-
-        await portfoliosCollection.updateOne(
-            { userEmail },
-            {
-                $set: {
-                    [`assets.${symbol}`]: updatedAsset,
-                    lastRefreshed: new Date(),
-                },
-                $setOnInsert: { userEmail },
-            },
-            { upsert: true }
-        )
-
-        return NextResponse.json(
-            { message: "Transaction added successfully" },
-            { status: 201 }
-        )
     } catch (error) {
-        console.error("Error adding transaction:", error)
+        console.error("Error processing transaction:", error)
         return NextResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }
         )
     }
+}
+
+async function handleBuyTransaction(
+    symbol,
+    date,
+    shares,
+    totalPaid,
+    userEmail,
+    transactionsCollection,
+    portfoliosCollection
+) {
+    const newTransaction = {
+        symbol,
+        date,
+        shares: parseFloat(shares),
+        totalPaid: parseFloat(totalPaid),
+        userEmail,
+        operation: "buy",
+    }
+
+    await transactionsCollection.insertOne(newTransaction)
+
+    const portfolio = await portfoliosCollection.findOne({ userEmail })
+    let updatedAsset = {
+        shares: parseFloat(shares),
+        totalPaid: parseFloat(totalPaid),
+        paidPerShare: parseFloat(totalPaid) / parseFloat(shares),
+    }
+
+    if (portfolio && portfolio.assets && portfolio.assets[symbol]) {
+        const existingAsset = portfolio.assets[symbol]
+        updatedAsset = {
+            shares: existingAsset.shares + parseFloat(shares),
+            totalPaid: existingAsset.totalPaid + parseFloat(totalPaid),
+            paidPerShare:
+                (existingAsset.totalPaid + parseFloat(totalPaid)) /
+                (existingAsset.shares + parseFloat(shares)),
+        }
+    }
+
+    await portfoliosCollection.updateOne(
+        { userEmail },
+        {
+            $set: {
+                [`assets.${symbol}`]: updatedAsset,
+                lastRefreshed: new Date(),
+            },
+            $setOnInsert: { userEmail },
+        },
+        { upsert: true }
+    )
+
+    return NextResponse.json(
+        { message: "Buy transaction added successfully" },
+        { status: 201 }
+    )
+}
+
+async function handleSellTransaction(
+    symbol,
+    date,
+    shares,
+    totalReceived,
+    userEmail,
+    transactionsCollection,
+    portfoliosCollection
+) {
+    const portfolio = await portfoliosCollection.findOne({ userEmail })
+    if (
+        !portfolio ||
+        !portfolio.assets ||
+        !portfolio.assets[symbol] ||
+        portfolio.assets[symbol].shares < parseFloat(shares)
+    ) {
+        return NextResponse.json(
+            { error: "Not enough shares to sell" },
+            { status: 400 }
+        )
+    }
+
+    const buyTransactions = await transactionsCollection
+        .find({ userEmail, symbol, operation: "buy" })
+        .sort({ date: 1 })
+        .toArray()
+
+    let sharesToSell = parseFloat(shares)
+    let totalCostBasis = 0
+    let updatedBuyTransactions = []
+
+    for (let buyTx of buyTransactions) {
+        if (sharesToSell <= 0) break
+
+        const availableShares = buyTx.shares - (buyTx.soldShares || 0)
+        const sharesToSellFromThisTx = Math.min(availableShares, sharesToSell)
+
+        totalCostBasis +=
+            (sharesToSellFromThisTx / buyTx.shares) * buyTx.totalPaid
+        sharesToSell -= sharesToSellFromThisTx
+
+        updatedBuyTransactions.push({
+            updateOne: {
+                filter: { _id: buyTx._id },
+                update: { $inc: { soldShares: sharesToSellFromThisTx } },
+            },
+        })
+    }
+
+    if (sharesToSell > 0) {
+        return NextResponse.json(
+            { error: "Not enough shares to sell" },
+            { status: 400 }
+        )
+    }
+
+    const pnl = parseFloat(totalReceived) - totalCostBasis
+
+    const newSellTransaction = {
+        symbol,
+        date,
+        shares: parseFloat(shares),
+        totalReceived: parseFloat(totalReceived),
+        userEmail,
+        operation: "sell",
+        pnl,
+    }
+
+    await transactionsCollection.insertOne(newSellTransaction)
+    await transactionsCollection.bulkWrite(updatedBuyTransactions)
+
+    const existingAsset = portfolio.assets[symbol]
+    const updatedAsset = {
+        shares: existingAsset.shares - parseFloat(shares),
+        totalPaid: existingAsset.totalPaid - totalCostBasis,
+        paidPerShare:
+            (existingAsset.totalPaid - totalCostBasis) /
+            (existingAsset.shares - parseFloat(shares)),
+    }
+
+    await portfoliosCollection.updateOne(
+        { userEmail },
+        {
+            $set: {
+                [`assets.${symbol}`]: updatedAsset,
+                lastRefreshed: new Date(),
+            },
+        }
+    )
+
+    return NextResponse.json(
+        { message: "Sell transaction added successfully", pnl },
+        { status: 201 }
+    )
 }
