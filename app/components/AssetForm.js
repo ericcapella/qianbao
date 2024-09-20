@@ -2,6 +2,25 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format } from "date-fns"
+import { CalendarIcon } from "lucide-react"
 
 export default function AssetForm({ onAssetAdded }) {
     const [symbol, setSymbol] = useState("")
@@ -64,64 +83,195 @@ export default function AssetForm({ onAssetAdded }) {
         }
     }
 
+    const handleSharesChange = (e) => {
+        const value = e.target.value
+        if (value === "" || parseFloat(value) >= 0) {
+            setShares(value)
+        }
+    }
+
     return (
-        <form onSubmit={handleSubmit} className="mb-4">
-            <input
-                type="text"
-                value={symbol}
-                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                placeholder="Asset Symbol (e.g., AAPL)"
-                required
-                className="mr-2 p-2 border rounded"
-            />
-            <input
-                type="number"
-                value={shares}
-                onChange={(e) => setShares(e.target.value)}
-                placeholder="Number of Shares"
-                required
-                className="mr-2 p-2 border rounded"
-            />
-            <input
-                type="number"
-                value={totalAmount}
-                onChange={(e) => setTotalAmount(e.target.value)}
-                placeholder={
-                    operation === "buy" ? "Total Paid" : "Total Received"
-                }
-                required
-                className="mr-2 p-2 border rounded"
-            />
-            <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                className="mr-2 p-2 border rounded"
-            />
-            <div className="mb-4">
-                <label
-                    htmlFor="operation"
-                    className="block text-sm font-medium text-gray-700"
-                >
-                    Operation
-                </label>
-                <select
-                    id="operation"
-                    value={operation}
-                    onChange={(e) => setOperation(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                >
-                    <option value="buy">Buy</option>
-                    <option value="sell">Sell</option>
-                </select>
-            </div>
-            <button
-                type="submit"
-                className="p-2 bg-blue-500 text-white rounded"
-            >
-                Add Transaction
-            </button>
-        </form>
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button>Add Transaction</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add Transaction</DialogTitle>
+                </DialogHeader>
+                <Tabs value={operation} onValueChange={setOperation}>
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="buy">Buy</TabsTrigger>
+                        <TabsTrigger value="sell">Sell</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="buy">
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <Label htmlFor="symbol">Asset Symbol</Label>
+                                <Input
+                                    id="symbol"
+                                    value={symbol}
+                                    onChange={(e) =>
+                                        setSymbol(e.target.value.toUpperCase())
+                                    }
+                                    placeholder="e.g., AAPL"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="shares">Number of Shares</Label>
+                                <Input
+                                    id="shares"
+                                    type="number"
+                                    value={shares}
+                                    onChange={handleSharesChange}
+                                    placeholder="0.00"
+                                    required
+                                    min="0"
+                                    step="any"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="totalAmount">Total Paid</Label>
+                                <Input
+                                    id="totalAmount"
+                                    type="number"
+                                    value={totalAmount}
+                                    onChange={(e) =>
+                                        setTotalAmount(e.target.value)
+                                    }
+                                    placeholder="0.00"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="date">Date</Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className={`w-full justify-start text-left font-normal ${
+                                                !date && "text-muted-foreground"
+                                            }`}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {date
+                                                ? format(new Date(date), "PPP")
+                                                : "Pick a date"}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={
+                                                date
+                                                    ? new Date(date)
+                                                    : undefined
+                                            }
+                                            onSelect={(newDate) =>
+                                                setDate(
+                                                    newDate
+                                                        ? format(
+                                                              newDate,
+                                                              "yyyy-MM-dd"
+                                                          )
+                                                        : ""
+                                                )
+                                            }
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <Button type="submit">Add Transaction</Button>
+                        </form>
+                    </TabsContent>
+                    <TabsContent value="sell">
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <Label htmlFor="symbol">Asset Symbol</Label>
+                                <Input
+                                    id="symbol"
+                                    value={symbol}
+                                    onChange={(e) =>
+                                        setSymbol(e.target.value.toUpperCase())
+                                    }
+                                    placeholder="e.g., AAPL"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="shares">Number of Shares</Label>
+                                <Input
+                                    id="shares"
+                                    type="number"
+                                    value={shares}
+                                    onChange={handleSharesChange}
+                                    placeholder="0.00"
+                                    required
+                                    min="0"
+                                    step="any"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="totalAmount">
+                                    Total Received
+                                </Label>
+                                <Input
+                                    id="totalAmount"
+                                    type="number"
+                                    value={totalAmount}
+                                    onChange={(e) =>
+                                        setTotalAmount(e.target.value)
+                                    }
+                                    placeholder="0.00"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="date">Date</Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className={`w-full justify-start text-left font-normal ${
+                                                !date && "text-muted-foreground"
+                                            }`}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {date
+                                                ? format(new Date(date), "PPP")
+                                                : "Pick a date"}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={
+                                                date
+                                                    ? new Date(date)
+                                                    : undefined
+                                            }
+                                            onSelect={(newDate) =>
+                                                setDate(
+                                                    newDate
+                                                        ? format(
+                                                              newDate,
+                                                              "yyyy-MM-dd"
+                                                          )
+                                                        : ""
+                                                )
+                                            }
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <Button type="submit">Add Transaction</Button>
+                        </form>
+                    </TabsContent>
+                </Tabs>
+            </DialogContent>
+        </Dialog>
     )
 }
