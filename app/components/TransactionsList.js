@@ -42,8 +42,7 @@ const getUniqueYears = (transactions) => {
     return [...new Set(years)].sort((a, b) => a - b) // Sort in ascending order
 }
 
-export default function TransactionList() {
-    const [transactions, setTransactions] = useState([])
+export default function TransactionList({ transactions }) {
     const [filteredTransactions, setFilteredTransactions] = useState([])
     const [assets, setAssets] = useState([])
     const [selectedAsset, setSelectedAsset] = useState(null)
@@ -52,30 +51,13 @@ export default function TransactionList() {
     const [availableYears, setAvailableYears] = useState([])
 
     useEffect(() => {
-        if (status === "authenticated" && session?.user?.email) {
-            fetchTransactions()
+        if (transactions.length > 0) {
+            setFilteredTransactions(transactions)
+            const uniqueAssets = [...new Set(transactions.map((t) => t.symbol))]
+            setAssets(uniqueAssets)
+            setAvailableYears(getUniqueYears(transactions))
         }
-    }, [status, session?.user?.email])
-
-    const fetchTransactions = async () => {
-        try {
-            const response = await fetch(
-                `/api/transactions?userEmail=${encodeURIComponent(
-                    session.user.email
-                )}`
-            )
-            if (response.ok) {
-                const data = await response.json()
-                setTransactions(data)
-                setFilteredTransactions(data)
-                const uniqueAssets = [...new Set(data.map((t) => t.symbol))]
-                setAssets(uniqueAssets)
-                setAvailableYears(getUniqueYears(data))
-            }
-        } catch (error) {
-            console.error("Error fetching transactions:", error)
-        }
-    }
+    }, [transactions])
 
     const applyFilters = () => {
         let filtered = transactions
@@ -126,28 +108,15 @@ export default function TransactionList() {
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button
-                                variant={"outline"}
-                                className={`w-[300px] justify-start text-left font-normal ${
-                                    !dateRange.from &&
-                                    !dateRange.to &&
-                                    "text-muted-foreground"
-                                }`}
+                                variant="outline"
+                                className="ml-2"
+                                size="sm"
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {dateRange.from && dateRange.to ? (
-                                    dateRange.from.getFullYear() ===
-                                        dateRange.to.getFullYear() &&
-                                    dateRange.from.getMonth() === 0 &&
-                                    dateRange.to.getMonth() === 11 &&
-                                    dateRange.from.getDate() === 1 &&
-                                    dateRange.to.getDate() === 31 ? (
-                                        `Year ${dateRange.from.getFullYear()}`
-                                    ) : (
-                                        <>
-                                            {formatDate(dateRange.from)} -{" "}
-                                            {formatDate(dateRange.to)}
-                                        </>
-                                    )
+                                    `${formatDate(
+                                        dateRange.from
+                                    )} - ${formatDate(dateRange.to)}`
                                 ) : (
                                     <span>Pick a date range</span>
                                 )}
@@ -238,9 +207,7 @@ export default function TransactionList() {
                                     €
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    {new Date(
-                                        transaction.date
-                                    ).toLocaleDateString()}
+                                    {formatDate(transaction.date)}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     {transaction.operation === "sell"

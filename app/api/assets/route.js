@@ -224,6 +224,8 @@ async function handleBuyTransaction(
     transactionsCollection,
     portfoliosCollection
 ) {
+    const escapedSymbol = symbol.replace(/\./g, "\uFF0E") // Escape dots
+
     const newTransaction = {
         symbol,
         date,
@@ -242,8 +244,8 @@ async function handleBuyTransaction(
         paidPerShare: parseFloat(totalPaid) / parseFloat(shares),
     }
 
-    if (portfolio && portfolio.assets && portfolio.assets[symbol]) {
-        const existingAsset = portfolio.assets[symbol]
+    if (portfolio && portfolio.assets && portfolio.assets[escapedSymbol]) {
+        const existingAsset = portfolio.assets[escapedSymbol]
         updatedAsset = {
             shares: existingAsset.shares + parseFloat(shares),
             totalPaid: existingAsset.totalPaid + parseFloat(totalPaid),
@@ -257,7 +259,7 @@ async function handleBuyTransaction(
         { userEmail },
         {
             $set: {
-                [`assets.${symbol}`]: updatedAsset,
+                [`assets.${escapedSymbol}`]: updatedAsset,
                 lastRefreshed: new Date(),
             },
             $setOnInsert: { userEmail },

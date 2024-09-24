@@ -22,7 +22,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 
-export default function AssetForm({ onAssetAdded }) {
+export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
     const [symbol, setSymbol] = useState("")
     const [shares, setShares] = useState("")
     const [totalAmount, setTotalAmount] = useState("")
@@ -91,10 +91,7 @@ export default function AssetForm({ onAssetAdded }) {
     }
 
     return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <Button>Add Transaction</Button>
-            </DialogTrigger>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Add Transaction</DialogTitle>
