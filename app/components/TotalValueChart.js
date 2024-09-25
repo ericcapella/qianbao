@@ -35,6 +35,7 @@ export default function TotalValueChart() {
     const [variation, setVariation] = useState({ percentage: 0, value: 0 })
     const [startValue, setStartValue] = useState(0)
     const [totalInvestedInPeriod, setTotalInvestedInPeriod] = useState(0)
+    const [totalPnLInPeriod, setTotalPnLInPeriod] = useState(0)
     const { data: session, status } = useSession()
 
     useEffect(() => {
@@ -57,6 +58,7 @@ export default function TotalValueChart() {
                 setVariation(data.variation)
                 setStartValue(data.startValue)
                 setTotalInvestedInPeriod(data.totalInvestedInPeriod)
+                setTotalPnLInPeriod(data.totalPnLInPeriod)
             }
         } catch (error) {
             console.error("Error fetching chart data:", error)
@@ -118,6 +120,7 @@ export default function TotalValueChart() {
                     variation={variation}
                     startValue={startValue}
                     totalInvestedInPeriod={totalInvestedInPeriod}
+                    totalPnLInPeriod={totalPnLInPeriod}
                 />
                 <Select value={timeRange} onValueChange={setTimeRange}>
                     <SelectTrigger

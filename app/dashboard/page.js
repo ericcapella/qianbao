@@ -94,29 +94,36 @@ export default function Dashboard() {
                         height={40}
                     />
                 </div>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
-                            <UserIcon className="h-5 w-5" />
+                <div className="flex items-center space-x-4">
+                    {transactions.length > 0 && (
+                        <Button onClick={handleOpenAssetForm}>
+                            Add Transaction
                         </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <div className="px-2 py-1.5">
-                            <p className="text-sm font-medium">
-                                {session.user.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                                {session.user.email}
-                            </p>
-                        </div>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>Support</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={handleLogout}>
-                            Logout
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                    )}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon">
+                                <UserIcon className="h-5 w-5" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <div className="px-2 py-1.5">
+                                <p className="text-sm font-medium">
+                                    {session.user.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    {session.user.email}
+                                </p>
+                            </div>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>Support</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={handleLogout}>
+                                Logout
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </header>
             <main className="px-24">
                 <AssetForm
@@ -130,11 +137,6 @@ export default function Dashboard() {
                     />
                 ) : (
                     <>
-                        <div className="flex justify-end mb-4">
-                            <Button onClick={handleOpenAssetForm}>
-                                Add Transaction
-                            </Button>
-                        </div>
                         <TotalValueChart key={`valuechart-${refreshKey}`} />
                         <AssetList key={`assetlist-${refreshKey}`}>
                             <AssetPieChart key={`piechart-${refreshKey}`} />

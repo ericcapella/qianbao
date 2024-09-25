@@ -10,6 +10,7 @@ export default function TotalValueCard({
     variation,
     startValue,
     totalInvestedInPeriod,
+    totalPnLInPeriod,
 }) {
     const { data: session, status } = useSession()
 
@@ -39,6 +40,10 @@ export default function TotalValueCard({
             </div>
             <div className="text-xs text-gray-500">
                 {formatNumber(totalInvestedInPeriod)}€ invested
+            </div>
+            <div className="text-xs text-gray-500">
+                {formatNumber(totalPnLInPeriod)}€{" "}
+                {totalPnLInPeriod >= 0 ? "profit" : "loss"}
             </div>
         </div>
     )

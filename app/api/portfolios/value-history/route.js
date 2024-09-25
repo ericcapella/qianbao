@@ -37,6 +37,7 @@ export async function GET(request) {
             startValue,
             totalInvestedInPeriod,
             totalSoldInPeriod,
+            totalPnLInPeriod,
         } = calculatePortfolioHistory(transactions, assetPrices, timeRange)
 
         return NextResponse.json({
@@ -46,6 +47,7 @@ export async function GET(request) {
             startValue,
             totalInvestedInPeriod,
             totalSoldInPeriod,
+            totalPnLInPeriod,
         })
     } catch (error) {
         console.error("Error calculating portfolio value history:", error)
@@ -65,6 +67,7 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
 
     let totalInvestedInPeriod = 0
     let totalSoldInPeriod = 0
+    let totalPnLInPeriod = 0
     let startValue = 0
 
     for (
@@ -84,7 +87,7 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
         })
     }
 
-    // Calculate total invested and sold amounts in the period
+    // Calculate total invested, sold amounts, and PnL in the period
     transactions
         .filter(
             (t) => new Date(t.date) >= startDate && new Date(t.date) <= endDate
@@ -94,6 +97,7 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
                 totalInvestedInPeriod += parseFloat(t.totalPaid)
             } else if (t.operation === "sell") {
                 totalSoldInPeriod += parseFloat(t.totalReceived)
+                totalPnLInPeriod += parseFloat(t.pnl || 0)
             }
         })
 
@@ -126,6 +130,7 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
         startValue: parseFloat(startValue.toFixed(2)),
         totalInvestedInPeriod: parseFloat(totalInvestedInPeriod.toFixed(2)),
         totalSoldInPeriod: parseFloat(totalSoldInPeriod.toFixed(2)),
+        totalPnLInPeriod: parseFloat(totalPnLInPeriod.toFixed(2)),
     }
 }
 
