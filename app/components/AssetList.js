@@ -34,7 +34,7 @@ export default function AssetList({ children }) {
                 const data = await response.json()
                 const assetData = Object.entries(data.assets).map(
                     ([symbol, asset]) => ({
-                        symbol,
+                        symbol: symbol.replace(/\uFF0E/g, "."), // Unescape dots
                         currentPrice: asset.currentPrice,
                         invested: asset.shares * asset.paidPerShare,
                         position: asset.value,

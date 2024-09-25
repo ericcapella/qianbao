@@ -49,7 +49,12 @@ export default function Dashboard() {
             )
             if (response.ok) {
                 const data = await response.json()
-                setTransactions(data)
+                // Unescape dots in symbols
+                const unescapedData = data.map((transaction) => ({
+                    ...transaction,
+                    symbol: transaction.symbol.replace(/\uFF0E/g, "."),
+                }))
+                setTransactions(unescapedData)
             }
         } catch (error) {
             console.error("Error fetching transactions:", error)

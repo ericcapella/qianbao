@@ -39,17 +39,33 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
 
         try {
             // First, add or update the asset
+            console.log("Sending asset request:", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    symbol: symbol.replace(/\./g, "\uFF0E"),
+                    date,
+                }),
+            })
+
             const assetResponse = await fetch("/api/assets", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ symbol, date }),
+                body: JSON.stringify({
+                    symbol: symbol.replace(/\./g, "\uFF0E"),
+                    date,
+                }), // Escape dots
             })
 
             if (!assetResponse.ok) {
                 throw new Error("Failed to add/update asset")
             }
+
+            console.log("Asset response:", await assetResponse.json())
 
             // Then, add the transaction
             const transactionResponse = await fetch("/api/assets", {
@@ -58,7 +74,7 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    symbol,
+                    symbol: symbol.replace(/\./g, "\uFF0E"), // Escape dots
                     date,
                     shares: parseFloat(shares),
                     totalAmount: parseFloat(totalAmount),

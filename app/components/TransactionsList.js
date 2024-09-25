@@ -53,7 +53,11 @@ export default function TransactionList({ transactions }) {
     useEffect(() => {
         if (transactions.length > 0) {
             setFilteredTransactions(transactions)
-            const uniqueAssets = [...new Set(transactions.map((t) => t.symbol))]
+            const uniqueAssets = [
+                ...new Set(
+                    transactions.map((t) => t.symbol.replace(/\uFF0E/g, "."))
+                ),
+            ] // Unescape dots
             setAssets(uniqueAssets)
             setAvailableYears(getUniqueYears(transactions))
         }
@@ -183,7 +187,10 @@ export default function TransactionList({ transactions }) {
                             <TableRow key={transaction._id}>
                                 <TableCell>{transaction.operation}</TableCell>
                                 <TableCell>
-                                    {transaction.symbol.toUpperCase()}
+                                    {transaction.symbol
+                                        .replace(/\uFF0E/g, ".")
+                                        .toUpperCase()}{" "}
+                                    {/* Unescape dots */}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     {formatNumber(

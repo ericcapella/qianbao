@@ -74,7 +74,7 @@ export async function POST(request) {
     } catch (error) {
         console.error("Error adding/updating asset:", error)
         return NextResponse.json(
-            { error: "Internal Server Error" },
+            { error: error.message || "Internal Server Error" },
             { status: 500 }
         )
     }
@@ -95,10 +95,11 @@ function mergePrices(existingPrices, newPrices) {
 
 async function fetchPricesFromAlphaVantage(symbol, timeSeriesType, inputDate) {
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY
-    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_${timeSeriesType}&symbol=${symbol}&apikey=${apiKey}`
+    const unescapedSymbol = symbol.replace(/\uFF0E/g, ".") // Unescape dots
+    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_${timeSeriesType}&symbol=${unescapedSymbol}&apikey=${apiKey}`
 
     console.log(
-        `Fetching ${timeSeriesType} data from Alpha Vantage for ${symbol}`
+        `Fetching ${timeSeriesType} data from Alpha Vantage for ${unescapedSymbol}`
     )
     const response = await fetch(apiUrl)
     const data = await response.json()
@@ -115,7 +116,7 @@ async function fetchPricesFromAlphaVantage(symbol, timeSeriesType, inputDate) {
     const timeSeries = data[timeSeriesKey]
 
     if (!timeSeries) {
-        console.log(`No time series data found for ${symbol}`)
+        console.log(`No time series data found for ${unescapedSymbol}`)
         throw new Error("No data available for this symbol")
     }
 
@@ -227,7 +228,7 @@ async function handleBuyTransaction(
     const escapedSymbol = symbol.replace(/\./g, "\uFF0E") // Escape dots
 
     const newTransaction = {
-        symbol,
+        symbol: escapedSymbol, // Store escaped symbol
         date,
         shares: parseFloat(shares),
         totalPaid: parseFloat(totalPaid),
@@ -282,12 +283,14 @@ async function handleSellTransaction(
     transactionsCollection,
     portfoliosCollection
 ) {
+    const escapedSymbol = symbol.replace(/\./g, "\uFF0E") // Escape dots
+
     const portfolio = await portfoliosCollection.findOne({ userEmail })
     if (
         !portfolio ||
         !portfolio.assets ||
-        !portfolio.assets[symbol] ||
-        portfolio.assets[symbol].shares < parseFloat(shares)
+        !portfolio.assets[escapedSymbol] ||
+        portfolio.assets[escapedSymbol].shares < parseFloat(shares)
     ) {
         return NextResponse.json(
             { error: "Not enough shares to sell" },
@@ -296,7 +299,7 @@ async function handleSellTransaction(
     }
 
     const buyTransactions = await transactionsCollection
-        .find({ userEmail, symbol, operation: "buy" })
+        .find({ userEmail, symbol: escapedSymbol, operation: "buy" }) // Use escaped symbol
         .sort({ date: 1 })
         .toArray()
 
@@ -332,7 +335,7 @@ async function handleSellTransaction(
     const pnl = parseFloat(totalReceived) - totalCostBasis
 
     const newSellTransaction = {
-        symbol,
+        symbol: escapedSymbol, // Store escaped symbol
         date,
         shares: parseFloat(shares),
         totalReceived: parseFloat(totalReceived),
@@ -344,7 +347,7 @@ async function handleSellTransaction(
     await transactionsCollection.insertOne(newSellTransaction)
     await transactionsCollection.bulkWrite(updatedBuyTransactions)
 
-    const existingAsset = portfolio.assets[symbol]
+    const existingAsset = portfolio.assets[escapedSymbol]
     const updatedAsset = {
         shares: existingAsset.shares - parseFloat(shares),
         totalPaid: existingAsset.totalPaid - totalCostBasis,
@@ -357,7 +360,7 @@ async function handleSellTransaction(
         { userEmail },
         {
             $set: {
-                [`assets.${symbol}`]: updatedAsset,
+                [`assets.${escapedSymbol}`]: updatedAsset,
                 lastRefreshed: new Date(),
             },
         }
