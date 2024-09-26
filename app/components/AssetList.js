@@ -32,8 +32,9 @@ export default function AssetList({ children }) {
             )
             if (response.ok) {
                 const data = await response.json()
-                const assetData = Object.entries(data.assets).map(
-                    ([symbol, asset]) => ({
+                const assetData = Object.entries(data.assets)
+                    .filter(([_, asset]) => asset.shares > 0)
+                    .map(([symbol, asset]) => ({
                         symbol: symbol.replace(/\uFF0E/g, "."), // Unescape dots
                         currentPrice: asset.currentPrice,
                         invested: asset.shares * asset.paidPerShare,
@@ -42,8 +43,7 @@ export default function AssetList({ children }) {
                         buyInPrice: asset.paidPerShare,
                         profitLoss:
                             asset.value - asset.paidPerShare * asset.shares,
-                    })
-                )
+                    }))
                 setAssets(assetData)
             }
         } catch (error) {

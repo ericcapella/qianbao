@@ -35,7 +35,7 @@ export default function AssetPieChart() {
                 )
                 const assetData = Object.entries(data.assets).map(
                     ([symbol, asset]) => ({
-                        symbol,
+                        symbol: symbol.replace(/\uFF0E/g, "."), // Unescape dots
                         value: asset.value,
                         percentage: (asset.value / totalValue) * 100,
                     })

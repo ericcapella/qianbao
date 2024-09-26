@@ -348,23 +348,35 @@ async function handleSellTransaction(
     await transactionsCollection.bulkWrite(updatedBuyTransactions)
 
     const existingAsset = portfolio.assets[escapedSymbol]
-    const updatedAsset = {
-        shares: existingAsset.shares - parseFloat(shares),
-        totalPaid: existingAsset.totalPaid - totalCostBasis,
-        paidPerShare:
-            (existingAsset.totalPaid - totalCostBasis) /
-            (existingAsset.shares - parseFloat(shares)),
-    }
+    const updatedShares = existingAsset.shares - parseFloat(shares)
 
-    await portfoliosCollection.updateOne(
-        { userEmail },
-        {
-            $set: {
-                [`assets.${escapedSymbol}`]: updatedAsset,
-                lastRefreshed: new Date(),
-            },
+    if (updatedShares === 0) {
+        // Remove the asset from the portfolio
+        await portfoliosCollection.updateOne(
+            { userEmail },
+            {
+                $unset: { [`assets.${escapedSymbol}`]: "" },
+                $set: { lastRefreshed: new Date() },
+            }
+        )
+    } else {
+        const updatedAsset = {
+            shares: updatedShares,
+            totalPaid: existingAsset.totalPaid - totalCostBasis,
+            paidPerShare:
+                (existingAsset.totalPaid - totalCostBasis) / updatedShares,
         }
-    )
+
+        await portfoliosCollection.updateOne(
+            { userEmail },
+            {
+                $set: {
+                    [`assets.${escapedSymbol}`]: updatedAsset,
+                    lastRefreshed: new Date(),
+                },
+            }
+        )
+    }
 
     return NextResponse.json(
         { message: "Sell transaction added successfully", pnl },
