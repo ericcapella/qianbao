@@ -1,50 +1,56 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useSession } from "next-auth/react"
+import { Card, CardContent } from "@/components/ui/card"
 import { formatNumber } from "@/lib/utils"
 
 export default function TotalValueCard({
     totalValue,
     variation,
-    startValue,
     totalInvestedInPeriod,
     totalPnLInPeriod,
 }) {
-    const { data: session, status } = useSession()
-
-    if (status === "loading") {
-        return <div>Loading...</div>
-    }
-
-    if (status === "unauthenticated") {
-        return null
-    }
+    const isPositive = variation.percentage >= 0
+    const textColor = isPositive ? "text-green-500" : "text-red-500"
 
     return (
-        <div className="flex flex-col">
-            <CardTitle className="text-2xl font-bold">
-                {formatNumber(totalValue)}€
-            </CardTitle>
-            <div
-                className={`text-sm font-medium ${
-                    variation.percentage >= 0
-                        ? "text-green-500"
-                        : "text-red-500"
-                }`}
-            >
-                {formatNumber(Math.abs(variation.value))}€&nbsp;&nbsp;
-                {variation.percentage >= 0 ? "▲" : "▼"}
-                {Math.abs(variation.percentage).toFixed(2)}%
-            </div>
-            <div className="text-xs text-gray-500">
-                {formatNumber(totalInvestedInPeriod)}€ invested
-            </div>
-            <div className="text-xs text-gray-500">
-                {formatNumber(totalPnLInPeriod)}€{" "}
-                {totalPnLInPeriod >= 0 ? "profit" : "loss"}
-            </div>
-        </div>
+        <Card className="w-full md:w-6/12 border-0 shadow-none">
+            <CardContent className="flex flex-col sm:flex-row justify-between p-0 gap-6">
+                <div className="flex flex-col">
+                    <span className="text-sm font-medium text-muted-foreground">
+                        Total Portfolio
+                    </span>
+                    <span className="text-2xl font-bold">
+                        {formatNumber(totalValue)}€
+                    </span>
+                    <span className={`text-xs ${textColor}`}>
+                        {formatNumber(Math.abs(variation.value))}€{" "}
+                        {isPositive ? "▲" : "▼"}
+                        {Math.abs(variation.percentage).toFixed(2)}%
+                    </span>
+                </div>
+                <div className="flex flex-col items-start justify-start">
+                    <span className="text-sm font-medium text-muted-foreground">
+                        Total Invested
+                    </span>
+                    <span className="text-2xl font-bold">
+                        {formatNumber(totalInvestedInPeriod)}€
+                    </span>
+                </div>
+                <div className="flex flex-col items-start justify-start">
+                    <span className="text-sm font-medium text-muted-foreground">
+                        Total PnL
+                    </span>
+                    <span
+                        className={`text-2xl font-bold ${
+                            totalPnLInPeriod >= 0
+                                ? "text-green-500"
+                                : "text-red-500"
+                        }`}
+                    >
+                        {formatNumber(totalPnLInPeriod)}€
+                    </span>
+                </div>
+            </CardContent>
+        </Card>
     )
 }

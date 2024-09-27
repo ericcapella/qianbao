@@ -92,11 +92,11 @@ export default function TransactionList({ transactions }) {
 
     return (
         <Card className="my-4">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row justify-between space-y-0 pb-2 gap-4">
                 <div className="flex items-center space-x-2">
                     <CardTitle>Transaction History</CardTitle>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 flex-col-reverse sm:flex-row gap-2">
                     {(selectedAsset || dateRange.from || dateRange.to) && (
                         <Button
                             variant="outline"
@@ -113,8 +113,7 @@ export default function TransactionList({ transactions }) {
                         <PopoverTrigger asChild>
                             <Button
                                 variant="outline"
-                                className="ml-2"
-                                size="sm"
+                                className="font-normal ml-2"
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {dateRange.from && dateRange.to ? (
@@ -153,7 +152,7 @@ export default function TransactionList({ transactions }) {
                         value={selectedAsset}
                         onValueChange={setSelectedAsset}
                     >
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select asset" />
                         </SelectTrigger>
                         <SelectContent>
@@ -178,14 +177,19 @@ export default function TransactionList({ transactions }) {
                                 Quantity
                             </TableHead>
                             <TableHead className="text-right">Total</TableHead>
-                            <TableHead className="text-right">Date</TableHead>
                             <TableHead className="text-right">PnL</TableHead>
+                            <TableHead className="text-right">Date</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filteredTransactions.map((transaction) => (
                             <TableRow key={transaction._id}>
-                                <TableCell>{transaction.operation}</TableCell>
+                                <TableCell>
+                                    {transaction.operation
+                                        .charAt(0)
+                                        .toUpperCase() +
+                                        transaction.operation.slice(1)}
+                                </TableCell>
                                 <TableCell>
                                     {transaction.symbol
                                         .replace(/\uFF0E/g, ".")
@@ -213,13 +217,19 @@ export default function TransactionList({ transactions }) {
                                     )}{" "}
                                     €
                                 </TableCell>
-                                <TableCell className="text-right">
-                                    {formatDate(transaction.date)}
-                                </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell
+                                    className={`text-right ${
+                                        transaction.pnl > 0
+                                            ? "text-green-500"
+                                            : "text-red-500"
+                                    }`}
+                                >
                                     {transaction.operation === "sell"
                                         ? `${formatNumber(transaction.pnl)} €`
-                                        : "-"}
+                                        : ""}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {formatDate(transaction.date)}
                                 </TableCell>
                             </TableRow>
                         ))}

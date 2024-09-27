@@ -98,7 +98,7 @@ export default function AssetPieChart() {
                         cy="50%"
                         innerRadius={60}
                         outerRadius={80}
-                        paddingAngle={5}
+                        // paddingAngle={5}
                         label={({ symbol, percentage }) =>
                             `${symbol} ${percentage.toFixed(0)}%`
                         }

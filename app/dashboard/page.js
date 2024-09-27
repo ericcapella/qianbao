@@ -20,6 +20,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { UserIcon } from "lucide-react"
 import Image from "next/image"
+import DashboardSkeleton from "../components/DashboardSkeleton"
+import Link from "next/link"
 
 export default function Dashboard() {
     const [refreshKey, setRefreshKey] = useState(0)
@@ -27,6 +29,7 @@ export default function Dashboard() {
     const router = useRouter()
     const [transactions, setTransactions] = useState([])
     const [isAssetFormOpen, setIsAssetFormOpen] = useState(false)
+    const [isDataLoading, setIsDataLoading] = useState(true)
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -41,6 +44,7 @@ export default function Dashboard() {
     }, [status, session?.user?.email])
 
     const fetchTransactions = async () => {
+        setIsDataLoading(true)
         try {
             const response = await fetch(
                 `/api/transactions?userEmail=${encodeURIComponent(
@@ -49,7 +53,6 @@ export default function Dashboard() {
             )
             if (response.ok) {
                 const data = await response.json()
-                // Unescape dots in symbols
                 const unescapedData = data.map((transaction) => ({
                     ...transaction,
                     symbol: transaction.symbol.replace(/\uFF0E/g, "."),
@@ -58,6 +61,8 @@ export default function Dashboard() {
             }
         } catch (error) {
             console.error("Error fetching transactions:", error)
+        } finally {
+            setIsDataLoading(false)
         }
     }
 
@@ -75,8 +80,8 @@ export default function Dashboard() {
         setIsAssetFormOpen(true)
     }
 
-    if (status === "loading") {
-        return <div>Loading...</div>
+    if (status === "loading" || isDataLoading) {
+        return <DashboardSkeleton />
     }
 
     if (status === "unauthenticated") {
@@ -85,18 +90,23 @@ export default function Dashboard() {
 
     return (
         <div>
-            <header className="flex justify-between items-center py-4 px-24">
+            <header className="flex justify-between items-center py-4 mx-auto px-4 lg:max-w-[1150px]">
                 <div className="">
-                    <Image
-                        src="/qianbao-logo.png"
-                        alt="QianBao"
-                        width={100}
-                        height={40}
-                    />
+                    <Link href="/">
+                        <Image
+                            src="/qianbao-logo.png"
+                            alt="QianBao"
+                            width={110}
+                            height={22}
+                        />
+                    </Link>
                 </div>
                 <div className="flex items-center space-x-4">
                     {transactions.length > 0 && (
-                        <Button onClick={handleOpenAssetForm}>
+                        <Button
+                            onClick={handleOpenAssetForm}
+                            className="font-normal"
+                        >
                             Add Transaction
                         </Button>
                     )}
@@ -125,7 +135,7 @@ export default function Dashboard() {
                     </DropdownMenu>
                 </div>
             </header>
-            <main className="px-24">
+            <main className="mx-auto px-4 lg:max-w-[1150px]">
                 <AssetForm
                     onAssetAdded={handleAssetAdded}
                     open={isAssetFormOpen}
@@ -137,6 +147,9 @@ export default function Dashboard() {
                     />
                 ) : (
                     <>
+                        <h1 className="text-2xl font-medium py-2">
+                            {session.user.name}'s investment portfolio
+                        </h1>
                         <TotalValueChart key={`valuechart-${refreshKey}`} />
                         <AssetList key={`assetlist-${refreshKey}`}>
                             <AssetPieChart key={`piechart-${refreshKey}`} />

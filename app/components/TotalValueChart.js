@@ -114,35 +114,36 @@ export default function TotalValueChart() {
 
     return (
         <Card>
-            <CardHeader className="flex items-center gap-2 space-y-0 py-5 sm:flex-row">
-                <TotalValueCard
-                    totalValue={totalValue}
-                    variation={variation}
-                    startValue={startValue}
-                    totalInvestedInPeriod={totalInvestedInPeriod}
-                    totalPnLInPeriod={totalPnLInPeriod}
-                />
-                <Select value={timeRange} onValueChange={setTimeRange}>
-                    <SelectTrigger
-                        className="w-[160px] rounded-lg sm:ml-auto"
-                        aria-label="Select time range"
-                    >
-                        <SelectValue placeholder="Select time range" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                        <SelectItem value="1M" className="rounded-lg">
-                            Last month
-                        </SelectItem>
-                        <SelectItem value="1Y" className="rounded-lg">
-                            Last year
-                        </SelectItem>
-                        <SelectItem value="ALL" className="rounded-lg">
-                            All time
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
+            <CardHeader className="flex flex-col space-y-0 py-5 shadow-0">
+                <div className="flex flex-row sm:flex-row items-start sm:items-center justify-between gap-4 border-0">
+                    <TotalValueCard
+                        totalValue={totalValue}
+                        variation={variation}
+                        totalInvestedInPeriod={totalInvestedInPeriod}
+                        totalPnLInPeriod={totalPnLInPeriod}
+                    />
+                    <Select value={timeRange} onValueChange={setTimeRange}>
+                        <SelectTrigger
+                            className="w-[160px] rounded-lg"
+                            aria-label="Select time range"
+                        >
+                            <SelectValue placeholder="Select time range" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                            <SelectItem value="1M" className="rounded-lg">
+                                Last month
+                            </SelectItem>
+                            <SelectItem value="1Y" className="rounded-lg">
+                                Last year
+                            </SelectItem>
+                            <SelectItem value="ALL" className="rounded-lg">
+                                All time
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </CardHeader>
-            <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+            <CardContent className="px-2 pt-4 sm:pt-6">
                 <ResponsiveContainer width="100%" height={250}>
                     <AreaChart data={chartData}>
                         <defs>

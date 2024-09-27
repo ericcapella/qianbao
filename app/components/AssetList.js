@@ -63,13 +63,13 @@ export default function AssetList({ children }) {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Asset name</TableHead>
-                                    <TableHead className="text-right">
+                                    <TableHead className="text-left">
                                         Current price
                                     </TableHead>
-                                    <TableHead className="text-right">
+                                    <TableHead className="text-left">
                                         Invested
                                     </TableHead>
-                                    <TableHead className="text-right">
+                                    <TableHead className="text-left">
                                         Position
                                     </TableHead>
                                     <TableHead className="text-right">
@@ -83,10 +83,10 @@ export default function AssetList({ children }) {
                                         <TableCell className="font-medium">
                                             {asset.symbol.toUpperCase()}
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-left">
                                             {formatNumber(asset.currentPrice)} €
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-left">
                                             <div>
                                                 {formatNumber(asset.invested)} €
                                             </div>
@@ -95,7 +95,7 @@ export default function AssetList({ children }) {
                                                 €/share
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-left">
                                             <div>
                                                 {formatNumber(asset.position)} €
                                             </div>
