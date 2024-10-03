@@ -53,12 +53,12 @@ export default function AssetList({ children }) {
 
     return (
         <Card className="my-4">
-            <CardHeader>
-                <CardTitle>Asset Portfolio</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-5 gap-4">
-                    <div className="col-span-5 lg:col-span-3">
+            <div className="flex flex-col lg:flex-row">
+                <div className="lg:w-3/5">
+                    <CardHeader>
+                        <CardTitle>Asset Portfolio</CardTitle>
+                    </CardHeader>
+                    <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -127,10 +127,10 @@ export default function AssetList({ children }) {
                                 ))}
                             </TableBody>
                         </Table>
-                    </div>
-                    <div className="col-span-5 lg:col-span-2">{children}</div>
+                    </CardContent>
                 </div>
-            </CardContent>
+                <div className="lg:w-2/5">{children}</div>
+            </div>
         </Card>
     )
 }

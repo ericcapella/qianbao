@@ -38,7 +38,7 @@ export default function TotalValueCard({
                 </div>
                 <div className="flex flex-col items-start justify-start">
                     <span className="text-sm font-medium text-muted-foreground">
-                        Total PnL
+                        Realized PnL
                     </span>
                     <span
                         className={`text-2xl font-bold ${

@@ -141,7 +141,7 @@ export default function Dashboard() {
                     open={isAssetFormOpen}
                     onOpenChange={setIsAssetFormOpen}
                 />
-                {transactions.length < 0 ? (
+                {transactions.length === 0 ? (
                     <EmptyPortfolioCard
                         onAddTransaction={handleOpenAssetForm}
                     />
