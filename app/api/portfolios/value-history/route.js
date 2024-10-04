@@ -69,6 +69,7 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
     let totalSoldInPeriod = 0
     let totalPnLInPeriod = 0
     let startValue = 0
+    let lastKnownValue = 0
 
     for (
         let date = new Date(startDate);
@@ -77,22 +78,36 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
     ) {
         const value = calculatePortfolioValue(transactions, assetPrices, date)
 
+        // Include transaction values for the current date
+        const dailyTransactions = transactions.filter(
+            (t) => new Date(t.date).toDateString() === date.toDateString()
+        )
+        const dailyValue = dailyTransactions.reduce((sum, t) => {
+            if (t.operation === "buy") {
+                return sum + parseFloat(t.totalPaid)
+            } else if (t.operation === "sell") {
+                return sum - parseFloat(t.totalReceived)
+            }
+            return sum
+        }, value)
+
+        if (dailyValue !== 0) {
+            lastKnownValue = dailyValue
+        }
+
+        const valueToUse = dailyValue !== 0 ? dailyValue : lastKnownValue
+
         if (portfolioHistory.length === 0) {
-            startValue = value
+            startValue = valueToUse
         }
 
         portfolioHistory.push({
             date: date.toISOString().split("T")[0],
-            value: parseFloat(value.toFixed(2)),
+            value: parseFloat(valueToUse.toFixed(2)),
         })
-    }
 
-    // Calculate total invested, sold amounts, and PnL in the period
-    transactions
-        .filter(
-            (t) => new Date(t.date) >= startDate && new Date(t.date) <= endDate
-        )
-        .forEach((t) => {
+        // Update period totals
+        dailyTransactions.forEach((t) => {
             if (t.operation === "buy") {
                 totalInvestedInPeriod += parseFloat(t.totalPaid)
             } else if (t.operation === "sell") {
@@ -100,6 +115,7 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
                 totalPnLInPeriod += parseFloat(t.pnl || 0)
             }
         })
+    }
 
     const totalValue = portfolioHistory[portfolioHistory.length - 1].value
     const variation = {
@@ -146,7 +162,7 @@ function getStartDate(transactions, timeRange) {
             const oldestDate = new Date(
                 Math.min(...transactions.map((t) => new Date(t.date)))
             )
-            oldestDate.setDate(oldestDate.getDate() - 1) // Set to one day before the oldest transaction
+            oldestDate.setDate(oldestDate.getDate()) // Set to one day before the oldest transaction
             return oldestDate
     }
 }
