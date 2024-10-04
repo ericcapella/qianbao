@@ -2,6 +2,8 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { formatNumber } from "@/lib/utils"
+import RealizedPnLDialog from "./RealizedPnLDialog"
+import { useSession } from "next-auth/react"
 
 export default function TotalValueCard({
     totalValue,
@@ -9,6 +11,8 @@ export default function TotalValueCard({
     totalInvestedInPeriod,
     totalPnLInPeriod,
 }) {
+    const { data: session } = useSession()
+    console.log("Rendering TotalValueCard, session:", session)
     const isPositive = variation.percentage >= 0
     const textColor = isPositive ? "text-green-500" : "text-red-500"
 
@@ -36,20 +40,22 @@ export default function TotalValueCard({
                         {formatNumber(totalInvestedInPeriod)}€
                     </span>
                 </div>
-                <div className="flex flex-col items-start justify-start">
-                    <span className="text-sm font-medium text-muted-foreground">
-                        Realized PnL
-                    </span>
-                    <span
-                        className={`text-2xl font-bold ${
-                            totalPnLInPeriod >= 0
-                                ? "text-green-500"
-                                : "text-red-500"
-                        }`}
-                    >
-                        {formatNumber(totalPnLInPeriod)}€
-                    </span>
-                </div>
+                <RealizedPnLDialog session={session}>
+                    <div className="flex flex-col items-start justify-start cursor-pointer">
+                        <span className="text-sm font-medium text-muted-foreground">
+                            Realized PnL
+                        </span>
+                        <span
+                            className={`text-2xl font-bold ${
+                                totalPnLInPeriod >= 0
+                                    ? "text-green-500"
+                                    : "text-red-500"
+                            }`}
+                        >
+                            {formatNumber(totalPnLInPeriod)}€
+                        </span>
+                    </div>
+                </RealizedPnLDialog>
             </CardContent>
         </Card>
     )
