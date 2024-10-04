@@ -9,6 +9,7 @@ import {
     YAxis,
     ResponsiveContainer,
     Tooltip,
+    ReferenceDot,
 } from "recharts"
 import {
     Card,
@@ -28,6 +29,80 @@ import { useSession } from "next-auth/react"
 import TotalValueCard from "./TotalValueCard"
 import { formatNumber } from "@/lib/utils"
 
+const CustomTooltip = ({
+    active,
+    payload,
+    label,
+    transactions,
+    hoveredDot,
+}) => {
+    if ((!active || !payload || !payload.length) && !hoveredDot) return null
+
+    let date, value, transaction
+
+    if (hoveredDot) {
+        date = new Date(hoveredDot.date)
+        value = hoveredDot.totalPaid || hoveredDot.totalReceived
+        transaction = hoveredDot
+    } else {
+        date = new Date(label)
+        value = payload[0].value
+        transaction = transactions.find(
+            (t) => new Date(t.date).toDateString() === date.toDateString()
+        )
+    }
+
+    return (
+        <div className="custom-tooltip bg-white p-4 border rounded-lg shadow-md">
+            <p className="text-sm text-gray-600">
+                {date.toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                })}
+            </p>
+            <p className="font-bold">{`${formatNumber(value)} €`}</p>
+            {transaction && (
+                <div className="mt-2 border-t pt-2">
+                    <p className="text-sm">
+                        <span className="font-semibold">
+                            {transaction.operation.charAt(0).toUpperCase() +
+                                transaction.operation.slice(1)}
+                            :
+                        </span>{" "}
+                        {transaction.symbol.replace(/\uFF0E/g, ".")}
+                    </p>
+                    <p className="text-sm">
+                        <span className="font-semibold">Shares:</span>{" "}
+                        {typeof transaction.shares === "number"
+                            ? transaction.shares.toFixed(6)
+                            : "N/A"}
+                    </p>
+                    <p className="text-sm">
+                        <span className="font-semibold">
+                            {transaction.operation === "buy"
+                                ? "Total Paid:"
+                                : "Total Received:"}
+                        </span>{" "}
+                        {formatNumber(
+                            transaction.operation === "buy"
+                                ? transaction.totalPaid
+                                : transaction.totalReceived
+                        )}{" "}
+                        €
+                    </p>
+                    {transaction.operation === "sell" && (
+                        <p className="text-sm">
+                            <span className="font-semibold">PnL:</span>{" "}
+                            {formatNumber(transaction.pnl)} €
+                        </p>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
 export default function TotalValueChart() {
     const [chartData, setChartData] = useState([])
     const [timeRange, setTimeRange] = useState("1Y")
@@ -36,6 +111,8 @@ export default function TotalValueChart() {
     const [startValue, setStartValue] = useState(0)
     const [totalInvestedInPeriod, setTotalInvestedInPeriod] = useState(0)
     const [totalPnLInPeriod, setTotalPnLInPeriod] = useState(0)
+    const [transactions, setTransactions] = useState([]) // New state for transactions
+    const [hoveredDot, setHoveredDot] = useState(null)
     const { data: session, status } = useSession()
 
     useEffect(() => {
@@ -49,16 +126,19 @@ export default function TotalValueChart() {
             const response = await fetch(
                 `/api/portfolios/value-history?userEmail=${encodeURIComponent(
                     session.user.email
-                )}&timeRange=${timeRange}`
+                )}&timeRange=${timeRange}&includeTransactions=true`
             )
             if (response.ok) {
                 const data = await response.json()
+                console.log("Received data from API:", data)
                 setChartData(data.history)
                 setTotalValue(data.totalValue)
                 setVariation(data.variation)
                 setStartValue(data.startValue)
                 setTotalInvestedInPeriod(data.totalInvestedInPeriod)
                 setTotalPnLInPeriod(data.totalPnLInPeriod)
+                setTransactions(data.transactions)
+                console.log("Set transactions:", data.transactions)
             }
         } catch (error) {
             console.error("Error fetching chart data:", error)
@@ -183,20 +263,12 @@ export default function TotalValueChart() {
                             style={{ fontSize: "0.8rem" }}
                         />
                         <Tooltip
-                            contentStyle={{ borderRadius: "8px" }}
-                            formatter={(value) => [
-                                `${formatNumber(value)} €`,
-                                "",
-                            ]}
-                            labelFormatter={(value) =>
-                                new Date(value).toLocaleDateString("en-GB", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                })
+                            content={
+                                <CustomTooltip
+                                    transactions={transactions}
+                                    hoveredDot={hoveredDot}
+                                />
                             }
-                            labelStyle={{ color: "#666", fontSize: "12px" }}
-                            separator=""
                         />
                         <Area
                             type="monotone"
@@ -207,6 +279,22 @@ export default function TotalValueChart() {
                             fill="url(#colorValue)"
                             baseValue={calculateYAxisMinimum()}
                         />
+                        {transactions.map((transaction, index) => (
+                            <ReferenceDot
+                                key={index}
+                                x={transaction.date}
+                                y={calculateYAxisMinimum()}
+                                r={7}
+                                fill={
+                                    transaction.operation === "buy"
+                                        ? "#5AC87C"
+                                        : "#EF5343"
+                                }
+                                stroke="none"
+                                onMouseEnter={() => setHoveredDot(transaction)}
+                                onMouseLeave={() => setHoveredDot(null)}
+                            />
+                        ))}
                     </AreaChart>
                 </ResponsiveContainer>
             </CardContent>

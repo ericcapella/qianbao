@@ -6,6 +6,8 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url)
         const userEmail = searchParams.get("userEmail")
         const timeRange = searchParams.get("timeRange")
+        const includeTransactions =
+            searchParams.get("includeTransactions") === "true"
 
         if (!userEmail) {
             return NextResponse.json(
@@ -40,7 +42,7 @@ export async function GET(request) {
             totalPnLInPeriod,
         } = calculatePortfolioHistory(transactions, assetPrices, timeRange)
 
-        return NextResponse.json({
+        const response = {
             history,
             totalValue,
             variation,
@@ -48,7 +50,18 @@ export async function GET(request) {
             totalInvestedInPeriod,
             totalSoldInPeriod,
             totalPnLInPeriod,
-        })
+            transactions: transactions.map((t) => ({
+                date: t.date,
+                operation: t.operation,
+                symbol: t.symbol,
+                shares: t.shares,
+                totalPaid: t.totalPaid,
+                totalReceived: t.totalReceived,
+                pnl: t.pnl,
+            })),
+        }
+
+        return NextResponse.json(response)
     } catch (error) {
         console.error("Error calculating portfolio value history:", error)
         return NextResponse.json(
