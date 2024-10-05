@@ -86,28 +86,29 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
     let portfolio = {}
     let lastKnownPrices = {}
 
-    // Calculate initial portfolio state
-    transactions.forEach((t) => {
-        if (new Date(t.date) <= startDate) {
-            if (!portfolio[t.symbol]) {
-                portfolio[t.symbol] = 0
+    // Only pre-calculate initial portfolio state for non-ALL time ranges
+    if (timeRange !== "ALL") {
+        transactions.forEach((t) => {
+            if (new Date(t.date) <= startDate) {
+                if (!portfolio[t.symbol]) {
+                    portfolio[t.symbol] = 0
+                }
+                if (t.operation === "buy") {
+                    portfolio[t.symbol] += parseFloat(t.shares)
+                } else if (t.operation === "sell") {
+                    portfolio[t.symbol] -= parseFloat(t.shares)
+                }
             }
-            if (t.operation === "buy") {
-                portfolio[t.symbol] += parseFloat(t.shares)
-            } else if (t.operation === "sell") {
-                portfolio[t.symbol] -= parseFloat(t.shares)
-            }
-        }
-    })
+        })
 
-    // Calculate initial portfolio value
-    startValue = calculatePortfolioValue(
-        portfolio,
-        assetPrices,
-        startDate,
-        lastKnownPrices
-    )
-    lastKnownValue = startValue
+        startValue = calculatePortfolioValue(
+            portfolio,
+            assetPrices,
+            startDate,
+            lastKnownPrices
+        )
+        lastKnownValue = startValue
+    }
 
     for (
         let date = new Date(startDate);
@@ -139,6 +140,22 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
             lastKnownPrices
         )
 
+        // Calculate portfolio distribution
+        const distribution = Object.entries(portfolio).reduce(
+            (acc, [symbol, shares]) => {
+                const asset = assetPrices.find((a) => a.symbol === symbol)
+                if (asset) {
+                    const price = findClosestPrice(asset.prices, date)
+                    const value =
+                        shares *
+                        (price !== 0 ? price : lastKnownPrices[symbol] || 0)
+                    acc[symbol] = (value / portfolioValue) * 100
+                }
+                return acc
+            },
+            {}
+        )
+
         // Update last known prices
         Object.entries(portfolio).forEach(([symbol, shares]) => {
             const asset = assetPrices.find((a) => a.symbol === symbol)
@@ -156,9 +173,15 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
             lastKnownValue = valueToUse
         }
 
+        // For ALL time range, set startValue to the first non-zero value
+        if (timeRange === "ALL" && startValue === 0 && valueToUse !== 0) {
+            startValue = valueToUse
+        }
+
         portfolioHistory.push({
             date: date.toISOString().split("T")[0],
             value: parseFloat(valueToUse.toFixed(2)),
+            distribution: distribution,
         })
     }
 

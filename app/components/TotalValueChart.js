@@ -35,10 +35,11 @@ const CustomTooltip = ({
     label,
     transactions,
     hoveredDot,
+    portfolioDistribution,
 }) => {
     if ((!active || !payload || !payload.length) && !hoveredDot) return null
 
-    let date, value, transaction
+    let date, value, transaction, distribution
 
     if (hoveredDot) {
         date = new Date(hoveredDot.date)
@@ -52,6 +53,8 @@ const CustomTooltip = ({
         )
     }
 
+    distribution = portfolioDistribution[date.toISOString().split("T")[0]] || {}
+
     return (
         <div className="custom-tooltip bg-white p-4 border rounded-lg shadow-md">
             <p className="text-sm text-gray-600">
@@ -62,39 +65,59 @@ const CustomTooltip = ({
                 })}
             </p>
             <p className="font-bold">{`${formatNumber(value)} €`}</p>
+            <div className="mt-2 border-t pt-2">
+                {Object.entries(distribution)
+                    .filter(([_, percentage]) => percentage !== 0)
+                    .map(([symbol, percentage]) => (
+                        <p key={symbol} className="text-sm">
+                            {percentage.toFixed(0)}%{" "}
+                            {symbol.replace(/\uFF0E/g, ".")}
+                        </p>
+                    ))}
+            </div>
             {transaction && (
                 <div className="mt-2 border-t pt-2">
-                    <p className="text-sm">
-                        <span className="font-semibold">
-                            {transaction.operation.charAt(0).toUpperCase() +
-                                transaction.operation.slice(1)}
-                            :
-                        </span>{" "}
-                        {transaction.symbol.replace(/\uFF0E/g, ".")}
+                    <p className="text-sm font-bold">
+                        {transaction.operation.charAt(0).toUpperCase() +
+                            transaction.operation.slice(1)}{" "}
+                        transaction
                     </p>
                     <p className="text-sm">
-                        <span className="font-semibold">Shares:</span>{" "}
+                        {transaction.symbol.replace(/\uFF0E/g, ".")} (
                         {typeof transaction.shares === "number"
                             ? transaction.shares.toFixed(6)
-                            : "N/A"}
+                            : "N/A"}{" "}
+                        shares)
                     </p>
                     <p className="text-sm">
-                        <span className="font-semibold">
-                            {transaction.operation === "buy"
-                                ? "Total Paid:"
-                                : "Total Received:"}
-                        </span>{" "}
                         {formatNumber(
                             transaction.operation === "buy"
                                 ? transaction.totalPaid
                                 : transaction.totalReceived
                         )}{" "}
-                        €
+                        €{" "}
+                        {transaction.operation === "buy" ? "paid" : "received"}
                     </p>
                     {transaction.operation === "sell" && (
                         <p className="text-sm">
-                            <span className="font-semibold">PnL:</span>{" "}
-                            {formatNumber(transaction.pnl)} €
+                            <span
+                                className={
+                                    transaction.pnl >= 0
+                                        ? "text-green-500"
+                                        : "text-red-500"
+                                }
+                            >
+                                {formatNumber(transaction.pnl)} €
+                            </span>{" "}
+                            <span
+                                className={
+                                    transaction.pnl >= 0
+                                        ? "text-green-500"
+                                        : "text-red-500"
+                                }
+                            >
+                                {transaction.pnl >= 0 ? "profit" : "loss"}
+                            </span>
                         </p>
                     )}
                 </div>
@@ -113,6 +136,7 @@ export default function TotalValueChart() {
     const [totalPnLInPeriod, setTotalPnLInPeriod] = useState(0)
     const [transactions, setTransactions] = useState([]) // New state for transactions
     const [hoveredDot, setHoveredDot] = useState(null)
+    const [portfolioDistribution, setPortfolioDistribution] = useState({})
     const { data: session, status } = useSession()
 
     useEffect(() => {
@@ -138,6 +162,12 @@ export default function TotalValueChart() {
                 setTotalInvestedInPeriod(data.totalInvestedInPeriod)
                 setTotalPnLInPeriod(data.totalPnLInPeriod)
                 setTransactions(data.transactions)
+                setPortfolioDistribution(
+                    data.history.reduce((acc, item) => {
+                        acc[item.date] = item.distribution
+                        return acc
+                    }, {})
+                )
                 console.log("Set transactions:", data.transactions)
             }
         } catch (error) {
@@ -267,6 +297,9 @@ export default function TotalValueChart() {
                                 <CustomTooltip
                                     transactions={transactions}
                                     hoveredDot={hoveredDot}
+                                    portfolioDistribution={
+                                        portfolioDistribution
+                                    }
                                 />
                             }
                         />
