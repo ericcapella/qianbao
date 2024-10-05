@@ -47,7 +47,7 @@ export async function POST(request) {
         }
 
         if (needsUpdate) {
-            const timeSeriesType = inputDate < twoDaysAgo ? "WEEKLY" : "DAILY"
+            const timeSeriesType = inputDate < twoDaysAgo ? "DAILY" : "DAILY" //This was WEEKLY : DAILY, to only get weekly data for older transactions, but it's not working well as some dates after the transaction are missing
             const newPrices = await fetchPricesFromAlphaVantage(
                 symbol,
                 timeSeriesType,

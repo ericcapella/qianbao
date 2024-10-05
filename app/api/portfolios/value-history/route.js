@@ -83,50 +83,82 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
     let totalPnLInPeriod = 0
     let startValue = 0
     let lastKnownValue = 0
+    let portfolio = {}
+    let lastKnownPrices = {}
+
+    // Calculate initial portfolio state
+    transactions.forEach((t) => {
+        if (new Date(t.date) <= startDate) {
+            if (!portfolio[t.symbol]) {
+                portfolio[t.symbol] = 0
+            }
+            if (t.operation === "buy") {
+                portfolio[t.symbol] += parseFloat(t.shares)
+            } else if (t.operation === "sell") {
+                portfolio[t.symbol] -= parseFloat(t.shares)
+            }
+        }
+    })
+
+    // Calculate initial portfolio value
+    startValue = calculatePortfolioValue(
+        portfolio,
+        assetPrices,
+        startDate,
+        lastKnownPrices
+    )
+    lastKnownValue = startValue
 
     for (
         let date = new Date(startDate);
         date <= endDate;
         date.setDate(date.getDate() + 1)
     ) {
-        const value = calculatePortfolioValue(transactions, assetPrices, date)
-
-        // Include transaction values for the current date
         const dailyTransactions = transactions.filter(
             (t) => new Date(t.date).toDateString() === date.toDateString()
         )
-        const dailyValue = dailyTransactions.reduce((sum, t) => {
-            if (t.operation === "buy") {
-                return sum + parseFloat(t.totalPaid)
-            } else if (t.operation === "sell") {
-                return sum - parseFloat(t.totalReceived)
+
+        dailyTransactions.forEach((t) => {
+            if (!portfolio[t.symbol]) {
+                portfolio[t.symbol] = 0
             }
-            return sum
-        }, value)
+            if (t.operation === "buy") {
+                portfolio[t.symbol] += parseFloat(t.shares)
+                totalInvestedInPeriod += parseFloat(t.totalPaid)
+            } else if (t.operation === "sell") {
+                portfolio[t.symbol] -= parseFloat(t.shares)
+                totalSoldInPeriod += parseFloat(t.totalReceived)
+                totalPnLInPeriod += parseFloat(t.pnl || 0)
+            }
+        })
 
-        if (dailyValue !== 0) {
-            lastKnownValue = dailyValue
-        }
+        const portfolioValue = calculatePortfolioValue(
+            portfolio,
+            assetPrices,
+            date,
+            lastKnownPrices
+        )
 
-        const valueToUse = dailyValue !== 0 ? dailyValue : lastKnownValue
+        // Update last known prices
+        Object.entries(portfolio).forEach(([symbol, shares]) => {
+            const asset = assetPrices.find((a) => a.symbol === symbol)
+            if (asset) {
+                const price = findClosestPrice(asset.prices, date)
+                if (price !== 0) {
+                    lastKnownPrices[symbol] = price
+                }
+            }
+        })
 
-        if (portfolioHistory.length === 0) {
-            startValue = valueToUse
+        let valueToUse = portfolioValue !== 0 ? portfolioValue : lastKnownValue
+
+        if (valueToUse !== 0) {
+            lastKnownValue = valueToUse
         }
 
         portfolioHistory.push({
             date: date.toISOString().split("T")[0],
             value: parseFloat(valueToUse.toFixed(2)),
-        })
-
-        // Update period totals
-        dailyTransactions.forEach((t) => {
-            if (t.operation === "buy") {
-                totalInvestedInPeriod += parseFloat(t.totalPaid)
-            } else if (t.operation === "sell") {
-                totalSoldInPeriod += parseFloat(t.totalReceived)
-                totalPnLInPeriod += parseFloat(t.pnl || 0)
-            }
         })
     }
 
@@ -180,26 +212,20 @@ function getStartDate(transactions, timeRange) {
     }
 }
 
-function calculatePortfolioValue(transactions, assetPrices, date) {
-    const portfolio = {}
-    for (const transaction of transactions) {
-        if (new Date(transaction.date) <= date) {
-            if (!portfolio[transaction.symbol]) {
-                portfolio[transaction.symbol] = 0
-            }
-            if (transaction.operation === "buy") {
-                portfolio[transaction.symbol] += parseFloat(transaction.shares)
-            } else if (transaction.operation === "sell") {
-                portfolio[transaction.symbol] -= parseFloat(transaction.shares)
-            }
-        }
-    }
-
+function calculatePortfolioValue(
+    portfolio,
+    assetPrices,
+    date,
+    lastKnownPrices
+) {
     return Object.entries(portfolio).reduce((total, [symbol, shares]) => {
         const asset = assetPrices.find((a) => a.symbol === symbol)
         if (asset) {
             const price = findClosestPrice(asset.prices, date)
-            return total + shares * price
+            return (
+                total +
+                shares * (price !== 0 ? price : lastKnownPrices[symbol] || 0)
+            )
         }
         return total
     }, 0)
