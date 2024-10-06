@@ -49,13 +49,15 @@ export default function RealizedPnLDialog({ children }) {
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="sm:max-w-[80%]">
                 <DialogHeader>
-                    <DialogTitle>Realized PnL by Asset</DialogTitle>
+                    <DialogTitle>All time realized PnL by asset</DialogTitle>
                 </DialogHeader>
                 <Table>
                     <TableHeader>
                         <TableRow>
                             <TableHead>Asset</TableHead>
-                            <TableHead>Oldest Transaction</TableHead>
+                            <TableHead className="w-48">
+                                Oldest Transaction
+                            </TableHead>
                             <TableHead>Last Sell</TableHead>
                             <TableHead className="text-right">
                                 Shares Sold
@@ -64,6 +66,9 @@ export default function RealizedPnLDialog({ children }) {
                                 Total Invested
                             </TableHead>
                             <TableHead className="text-right">ROI</TableHead>
+                            <TableHead className="text-right w-40">
+                                Annualized Return
+                            </TableHead>
                             <TableHead className="text-right">PnL</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -102,6 +107,18 @@ export default function RealizedPnLDialog({ children }) {
                                         }`}
                                     >
                                         {formatNumber(item.roi * 100)}%
+                                    </TableCell>
+                                    <TableCell
+                                        className={`text-right ${
+                                            item.annualizedReturn >= 0
+                                                ? "text-green-500"
+                                                : "text-red-500"
+                                        }`}
+                                    >
+                                        {formatNumber(
+                                            item.annualizedReturn * 100
+                                        )}
+                                        %
                                     </TableCell>
                                     <TableCell
                                         className={`text-right ${

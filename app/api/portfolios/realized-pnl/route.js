@@ -75,16 +75,75 @@ export async function GET(request) {
                     totalSharesSold: 1,
                     totalInvested: 1,
                     roi: { $divide: ["$totalPnL", "$totalInvested"] },
+                    annualizedReturn: {
+                        $let: {
+                            vars: {
+                                daysDiff: {
+                                    $divide: [
+                                        {
+                                            $subtract: [
+                                                new Date(),
+                                                {
+                                                    $toDate:
+                                                        "$oldestTransaction",
+                                                },
+                                            ],
+                                        },
+                                        1000 * 60 * 60 * 24,
+                                    ],
+                                },
+                            },
+                            in: {
+                                $cond: [
+                                    {
+                                        $or: [
+                                            { $eq: ["$$daysDiff", 0] },
+                                            { $eq: ["$totalInvested", 0] },
+                                        ],
+                                    },
+                                    0,
+                                    {
+                                        $subtract: [
+                                            {
+                                                $pow: [
+                                                    {
+                                                        $add: [
+                                                            1,
+                                                            {
+                                                                $divide: [
+                                                                    "$totalPnL",
+                                                                    "$totalInvested",
+                                                                ],
+                                                            },
+                                                        ],
+                                                    },
+                                                    {
+                                                        $divide: [
+                                                            365,
+                                                            "$$daysDiff",
+                                                        ],
+                                                    },
+                                                ],
+                                            },
+                                            1,
+                                        ],
+                                    },
+                                ],
+                            },
+                        },
+                    },
                 },
             },
         ]
 
         console.log("Executing aggregation pipeline...")
+        console.log("Pipeline:", JSON.stringify(pipeline, null, 2))
+
         const result = await transactionsCollection
             .aggregate(pipeline)
             .toArray()
 
-        console.log("Aggregation result:", result)
+        console.log("Aggregation result:", JSON.stringify(result, null, 2))
 
         return NextResponse.json(result)
     } catch (error) {

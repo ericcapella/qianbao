@@ -34,7 +34,9 @@ export async function GET(request) {
         for (const [symbol, asset] of Object.entries(portfolio.assets)) {
             const assetData = await assetsCollection.findOne({ symbol })
             if (assetData && assetData.prices) {
-                const pricesArray = Object.entries(assetData.prices)
+                const pricesArray = Object.entries(assetData.prices).sort(
+                    (a, b) => new Date(b[0]) - new Date(a[0])
+                )
                 const latestPrice = parseFloat(pricesArray[0][1])
                 const assetValue = asset.shares * latestPrice
                 totalValue += assetValue

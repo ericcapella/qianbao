@@ -12,7 +12,6 @@ export default function TotalValueCard({
     totalPnLInPeriod,
 }) {
     const { data: session } = useSession()
-    console.log("Rendering TotalValueCard, session:", session)
     const isPositive = variation.percentage >= 0
     const textColor = isPositive ? "text-green-500" : "text-red-500"
 
