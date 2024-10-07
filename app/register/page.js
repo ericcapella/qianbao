@@ -57,7 +57,7 @@ export default function Register() {
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="John Doe"
+                                placeholder="Warren Buffett"
                                 required
                             />
                         </div>
@@ -68,7 +68,7 @@ export default function Register() {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="m@example.com"
+                                placeholder="email@example.com"
                                 required
                             />
                         </div>

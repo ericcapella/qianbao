@@ -93,10 +93,14 @@ function mergePrices(existingPrices, newPrices) {
     return mergedPrices
 }
 
-async function fetchPricesFromAlphaVantage(symbol, timeSeriesType, inputDate) {
+export async function fetchPricesFromAlphaVantage(
+    symbol,
+    timeSeriesType,
+    inputDate
+) {
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY
     const unescapedSymbol = symbol.replace(/\uFF0E/g, ".") // Unescape dots
-    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_${timeSeriesType}&symbol=${unescapedSymbol}&apikey=${apiKey}`
+    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_${timeSeriesType}&symbol=${unescapedSymbol}&apikey=${apiKey}&outputsize=full`
 
     console.log(
         `Fetching ${timeSeriesType} data from Alpha Vantage for ${unescapedSymbol}`

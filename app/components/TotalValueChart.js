@@ -53,7 +53,12 @@ const CustomTooltip = ({
         )
     }
 
-    distribution = portfolioDistribution[date.toISOString().split("T")[0]] || {}
+    // Ensure the date is valid before calling toISOString()
+    const dateKey =
+        date instanceof Date && !isNaN(date)
+            ? date.toISOString().split("T")[0]
+            : null
+    distribution = dateKey ? portfolioDistribution[dateKey] || {} : {}
 
     return (
         <div className="custom-tooltip bg-white p-4 border rounded-lg shadow-md">
@@ -70,7 +75,7 @@ const CustomTooltip = ({
                     .filter(([_, percentage]) => percentage !== 0)
                     .map(([symbol, percentage]) => (
                         <p key={symbol} className="text-sm">
-                            {percentage.toFixed(0)}%{" "}
+                            {percentage ? percentage.toFixed(0) : "0"}%{" "}
                             {symbol.replace(/\uFF0E/g, ".")}
                         </p>
                     ))}

@@ -22,6 +22,7 @@ import { UserIcon } from "lucide-react"
 import Image from "next/image"
 import DashboardSkeleton from "../components/DashboardSkeleton"
 import Link from "next/link"
+import { RefreshCcw } from "lucide-react"
 
 export default function Dashboard() {
     const [refreshKey, setRefreshKey] = useState(0)
@@ -30,6 +31,7 @@ export default function Dashboard() {
     const [transactions, setTransactions] = useState([])
     const [isAssetFormOpen, setIsAssetFormOpen] = useState(false)
     const [isDataLoading, setIsDataLoading] = useState(true)
+    const [lastRefreshed, setLastRefreshed] = useState(null)
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -40,8 +42,25 @@ export default function Dashboard() {
     useEffect(() => {
         if (status === "authenticated" && session?.user?.email) {
             fetchTransactions()
+            fetchPortfolioData()
         }
     }, [status, session?.user?.email])
+
+    const fetchPortfolioData = async () => {
+        try {
+            const response = await fetch(
+                `/api/portfolios?userEmail=${encodeURIComponent(
+                    session.user.email
+                )}`
+            )
+            if (response.ok) {
+                const data = await response.json()
+                setLastRefreshed(data.lastRefreshed)
+            }
+        } catch (error) {
+            console.error("Error fetching portfolio data:", error)
+        }
+    }
 
     const fetchTransactions = async () => {
         setIsDataLoading(true)
@@ -78,6 +97,46 @@ export default function Dashboard() {
 
     const handleOpenAssetForm = () => {
         setIsAssetFormOpen(true)
+    }
+
+    const handleRefreshPortfolio = async () => {
+        try {
+            const response = await fetch("/api/portfolios/refresh", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ userEmail: session.user.email }),
+            })
+
+            if (response.ok) {
+                // Refresh the dashboard data
+                setRefreshKey((prevKey) => prevKey + 1)
+                fetchTransactions()
+                fetchPortfolioData()
+            } else {
+                console.error("Failed to refresh portfolio")
+            }
+        } catch (error) {
+            console.error("Error refreshing portfolio:", error)
+        }
+    }
+
+    const formatLastRefreshed = (date) => {
+        if (!date) return "Never"
+        const now = new Date()
+        const refreshDate = new Date(date)
+        const diffDays = Math.floor((now - refreshDate) / (1000 * 60 * 60 * 24))
+
+        if (diffDays > 30) {
+            return `Last refreshed ${refreshDate.toLocaleDateString("en-GB")}`
+        } else if (diffDays === 0) {
+            return "Last refreshed today"
+        } else if (diffDays === 1) {
+            return "Last refreshed yesterday"
+        } else {
+            return `Last refreshed ${diffDays} days ago`
+        }
     }
 
     if (status === "loading" || isDataLoading) {
@@ -147,9 +206,27 @@ export default function Dashboard() {
                     />
                 ) : (
                     <>
-                        <h1 className="text-2xl font-medium py-2">
-                            {session.user.name}'s investment portfolio
-                        </h1>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2">
+                            <h1 className="text-2xl font-medium w-full sm:w-auto mb-2 sm:mb-0">
+                                {session.user.name}'s investment portfolio
+                            </h1>
+                            <div className="flex items-center justify-end space-x-4">
+                                <div className="flex items-center">
+                                    <span className="text-sm text-muted-foreground mr-2">
+                                        {formatLastRefreshed(lastRefreshed)}
+                                    </span>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={handleRefreshPortfolio}
+                                        title="Refresh portfolio"
+                                        className="p-0"
+                                    >
+                                        <RefreshCcw className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
                         <TotalValueChart key={`valuechart-${refreshKey}`} />
                         <AssetList key={`assetlist-${refreshKey}`}>
                             <AssetPieChart key={`piechart-${refreshKey}`} />
