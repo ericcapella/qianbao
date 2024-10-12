@@ -6,7 +6,7 @@ import AuthButtons from "./components/AuthButtons"
 export default function Home() {
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="flex justify-between items-center py-4 px-4 lg:px-8 max-w-[1150px] mx-auto w-full">
+            <header className="flex justify-between items-center py-4 px-4 lg:max-w-[1150px] mx-auto w-full">
                 <div>
                     <Link href="/">
                         <Image

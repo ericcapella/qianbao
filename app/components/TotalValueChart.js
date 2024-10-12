@@ -36,6 +36,7 @@ const CustomTooltip = ({
     transactions,
     hoveredDot,
     portfolioDistribution,
+    chartData,
 }) => {
     if ((!active || !payload || !payload.length) && !hoveredDot) return null
 
@@ -43,7 +44,11 @@ const CustomTooltip = ({
 
     if (hoveredDot) {
         date = new Date(hoveredDot.date)
-        value = hoveredDot.totalPaid || hoveredDot.totalReceived
+        // Find the corresponding chart data point for this date
+        const chartDataPoint = chartData.find(
+            (item) => new Date(item.date).toDateString() === date.toDateString()
+        )
+        value = chartDataPoint ? chartDataPoint.value : 0
         transaction = hoveredDot
     } else {
         date = new Date(label)
@@ -305,6 +310,7 @@ export default function TotalValueChart() {
                                     portfolioDistribution={
                                         portfolioDistribution
                                     }
+                                    chartData={chartData}
                                 />
                             }
                         />

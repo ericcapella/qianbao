@@ -85,6 +85,7 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
     let lastKnownValue = 0
     let portfolio = {}
     let lastKnownPrices = {}
+    let activeAssets = {}
 
     // Only pre-calculate initial portfolio state for non-ALL time ranges
     if (timeRange !== "ALL") {
@@ -108,6 +109,20 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
             lastKnownPrices
         )
         lastKnownValue = startValue
+
+        // Initialize activeAssets with initial values
+        Object.entries(portfolio).forEach(([symbol, shares]) => {
+            if (shares > 0) {
+                const asset = assetPrices.find((a) => a.symbol === symbol)
+                if (asset) {
+                    const price = findClosestPrice(asset.prices, startDate)
+                    activeAssets[symbol] = {
+                        shares,
+                        initialValue: shares * price,
+                    }
+                }
+            }
+        })
     }
 
     for (
@@ -126,10 +141,30 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
             if (t.operation === "buy") {
                 portfolio[t.symbol] += parseFloat(t.shares)
                 totalInvestedInPeriod += parseFloat(t.totalPaid)
+                if (!activeAssets[t.symbol]) {
+                    activeAssets[t.symbol] = {
+                        shares: parseFloat(t.shares),
+                        initialValue: parseFloat(t.totalPaid),
+                    }
+                } else {
+                    activeAssets[t.symbol].shares += parseFloat(t.shares)
+                    activeAssets[t.symbol].initialValue += parseFloat(
+                        t.totalPaid
+                    )
+                }
             } else if (t.operation === "sell") {
                 portfolio[t.symbol] -= parseFloat(t.shares)
                 totalSoldInPeriod += parseFloat(t.totalReceived)
                 totalPnLInPeriod += parseFloat(t.pnl || 0)
+                if (activeAssets[t.symbol]) {
+                    const sellRatio =
+                        parseFloat(t.shares) / activeAssets[t.symbol].shares
+                    activeAssets[t.symbol].shares -= parseFloat(t.shares)
+                    activeAssets[t.symbol].initialValue *= 1 - sellRatio
+                    if (activeAssets[t.symbol].shares <= 0) {
+                        delete activeAssets[t.symbol]
+                    }
+                }
             }
         })
 
@@ -176,32 +211,40 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
         // For ALL time range, set startValue to the first non-zero value
         if (timeRange === "ALL" && startValue === 0 && valueToUse !== 0) {
             startValue = valueToUse
+            // Initialize activeAssets for ALL time range
+            Object.entries(portfolio).forEach(([symbol, shares]) => {
+                if (shares > 0) {
+                    const asset = assetPrices.find((a) => a.symbol === symbol)
+                    if (asset) {
+                        const price = findClosestPrice(asset.prices, date)
+                        activeAssets[symbol] = {
+                            shares,
+                            initialValue: shares * price,
+                        }
+                    }
+                }
+            })
         }
 
         portfolioHistory.push({
             date: date.toISOString().split("T")[0],
             value: parseFloat(valueToUse.toFixed(2)),
             distribution: distribution,
+            activeAssets: { ...activeAssets },
         })
     }
 
     const totalValue = portfolioHistory[portfolioHistory.length - 1].value
+    const initialActiveValue = Object.values(activeAssets).reduce(
+        (sum, asset) => sum + asset.initialValue,
+        0
+    )
+
     const variation = {
-        value: parseFloat(
-            (
-                totalValue -
-                startValue -
-                totalInvestedInPeriod +
-                totalSoldInPeriod
-            ).toFixed(2)
-        ),
+        value: parseFloat((totalValue - initialActiveValue).toFixed(2)),
         percentage: parseFloat(
             (
-                ((totalValue -
-                    startValue -
-                    totalInvestedInPeriod +
-                    totalSoldInPeriod) /
-                    (startValue + totalInvestedInPeriod - totalSoldInPeriod)) *
+                ((totalValue - initialActiveValue) / initialActiveValue) *
                 100
             ).toFixed(2)
         ),
