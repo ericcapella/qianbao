@@ -3,7 +3,7 @@ import clientPromise from "@/lib/mongodb"
 
 export async function POST(request) {
     try {
-        const { symbol, date } = await request.json()
+        const { symbol, date, assetType } = await request.json()
         const client = await clientPromise
         const db = client.db("stocktracker")
         const assetsCollection = db.collection("assets")
@@ -46,27 +46,31 @@ export async function POST(request) {
             }
         }
 
-        if (needsUpdate) {
-            const timeSeriesType = inputDate < twoDaysAgo ? "DAILY" : "DAILY" //This was WEEKLY : DAILY, to only get weekly data for older transactions, but it's not working well as some dates after the transaction are missing
+        if (needsUpdate && assetType !== "custom") {
+            const timeSeriesType = inputDate < twoDaysAgo ? "DAILY" : "DAILY"
             const newPrices = await fetchPricesFromAlphaVantage(
                 symbol,
                 timeSeriesType,
-                inputDate
+                inputDate,
+                assetType
             )
             prices = mergePrices(prices, newPrices)
         }
 
-        await assetsCollection.updateOne(
-            { symbol },
-            {
-                $set: {
-                    symbol,
-                    prices,
-                    lastRefreshed: new Date(),
+        if (assetType !== "custom") {
+            await assetsCollection.updateOne(
+                { symbol },
+                {
+                    $set: {
+                        symbol,
+                        prices,
+                        lastRefreshed: new Date(),
+                        assetType,
+                    },
                 },
-            },
-            { upsert: true }
-        )
+                { upsert: true }
+            )
+        }
 
         return NextResponse.json({
             message: "Asset added/updated successfully",
@@ -96,11 +100,18 @@ function mergePrices(existingPrices, newPrices) {
 export async function fetchPricesFromAlphaVantage(
     symbol,
     timeSeriesType,
-    inputDate
+    inputDate,
+    assetType
 ) {
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY
-    const unescapedSymbol = symbol.replace(/\uFF0E/g, ".") // Unescape dots
-    const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_${timeSeriesType}&symbol=${unescapedSymbol}&apikey=${apiKey}&outputsize=full`
+    const unescapedSymbol = symbol.replace(/\uFF0E/g, ".")
+    let apiUrl
+
+    if (assetType === "crypto") {
+        apiUrl = `https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=${unescapedSymbol}&market=EUR&apikey=${apiKey}&outputsize=full`
+    } else {
+        apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_${timeSeriesType}&symbol=${unescapedSymbol}&apikey=${apiKey}&outputsize=full`
+    }
 
     console.log(
         `Fetching ${timeSeriesType} data from Alpha Vantage for ${unescapedSymbol}`
@@ -114,7 +125,9 @@ export async function fetchPricesFromAlphaVantage(
     }
 
     const timeSeriesKey =
-        timeSeriesType === "DAILY"
+        assetType === "crypto"
+            ? "Time Series (Digital Currency Daily)"
+            : timeSeriesType === "DAILY"
             ? "Time Series (Daily)"
             : "Weekly Time Series"
     const timeSeries = data[timeSeriesKey]
@@ -126,7 +139,8 @@ export async function fetchPricesFromAlphaVantage(
 
     return Object.entries(timeSeries).reduce((acc, [dateStr, values]) => {
         if (new Date(dateStr) >= inputDate) {
-            acc[dateStr] = values["4. close"]
+            acc[dateStr] =
+                assetType === "crypto" ? values["4. close"] : values["4. close"]
         }
         return acc
     }, {})

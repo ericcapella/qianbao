@@ -147,6 +147,7 @@ export default function TotalValueChart() {
     const [transactions, setTransactions] = useState([]) // New state for transactions
     const [hoveredDot, setHoveredDot] = useState(null)
     const [portfolioDistribution, setPortfolioDistribution] = useState({})
+    const [combinedProgression, setCombinedProgression] = useState(0)
     const { data: session, status } = useSession()
 
     useEffect(() => {
@@ -179,15 +180,18 @@ export default function TotalValueChart() {
                     }, {})
                 )
                 console.log("Set transactions:", data.transactions)
+
+                // Calculate and set the combined progression
+                const combinedValue =
+                    data.variation.value + data.totalPnLInPeriod
+                setCombinedProgression(combinedValue)
             }
         } catch (error) {
             console.error("Error fetching chart data:", error)
         }
     }
 
-    const isPositiveProgression =
-        chartData.length > 1 &&
-        chartData[chartData.length - 1].value > chartData[0].value
+    const isPositiveProgression = combinedProgression > 0
     const chartColor = isPositiveProgression ? "#5AC87C" : "#EF5343"
 
     const formatXAxis = (tickItem) => {
@@ -272,7 +276,7 @@ export default function TotalValueChart() {
                                 x1="0"
                                 y1="0"
                                 x2="0"
-                                y2="0.75"
+                                y2="1"
                             >
                                 <stop
                                     offset="5%"
@@ -298,7 +302,7 @@ export default function TotalValueChart() {
                         <YAxis
                             axisLine={true}
                             tickLine={true}
-                            domain={[calculateYAxisMinimum(), "auto"]}
+                            domain={[calculateYAxisMinimum(), "dataMax"]}
                             tickFormatter={(value) => `${value.toFixed(0)} €`}
                             style={{ fontSize: "0.8rem" }}
                         />

@@ -21,6 +21,13 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
     const [symbol, setSymbol] = useState("")
@@ -33,6 +40,7 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
     const [showSuggestions, setShowSuggestions] = useState(false)
     const [ownedAssets, setOwnedAssets] = useState([])
     const [maxShares, setMaxShares] = useState(0)
+    const [assetType, setAssetType] = useState("stock")
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -69,7 +77,8 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                 body: JSON.stringify({
                     symbol: symbol.replace(/\./g, "\uFF0E"),
                     date,
-                }), // Escape dots
+                    assetType,
+                }),
             })
 
             if (!assetResponse.ok) {
@@ -83,12 +92,13 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    symbol: symbol.replace(/\./g, "\uFF0E"), // Escape dots
+                    symbol: symbol.replace(/\./g, "\uFF0E"),
                     date,
                     shares: parseFloat(shares),
                     totalAmount: parseFloat(totalAmount),
                     userEmail: session.user.email,
                     operation,
+                    assetType,
                 }),
             })
 
@@ -116,7 +126,7 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
     }
 
     const fetchSuggestions = async (value) => {
-        if (value.length < 2) {
+        if (value.length < 2 || assetType !== "stock") {
             setSuggestions([])
             setShowSuggestions(false)
             return
@@ -189,52 +199,90 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                     <TabsContent value="buy">
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="relative">
-                                <Label htmlFor="symbol">Asset Symbol</Label>
-                                <Input
-                                    id="symbol"
-                                    value={symbol}
-                                    onChange={(e) => {
-                                        const value =
-                                            e.target.value.toUpperCase()
-                                        setSymbol(value)
-                                        fetchSuggestions(value)
-                                    }}
-                                    onBlur={() => {
-                                        setTimeout(
-                                            () => setShowSuggestions(false),
-                                            200
-                                        )
-                                    }}
-                                    placeholder="e.g., AAPL"
-                                    required
-                                />
-                                {showSuggestions && suggestions.length > 0 && (
-                                    <ul className="absolute z-10 w-full bg-white border border-gray-300 mt-1 max-h-60 overflow-auto">
-                                        {suggestions.map((suggestion) => (
-                                            <li
-                                                key={suggestion.symbol}
-                                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                                onMouseDown={(e) => {
-                                                    e.preventDefault() // Prevent blur event from firing
-                                                    setSymbol(suggestion.symbol)
-                                                    setShowSuggestions(false)
-                                                    // Update the input value directly
-                                                    const symbolInput =
-                                                        document.getElementById(
-                                                            "symbol"
-                                                        )
-                                                    if (symbolInput) {
-                                                        symbolInput.value =
-                                                            suggestion.symbol
-                                                    }
-                                                }}
+                                <Label htmlFor="asset">Asset</Label>
+                                <div className="flex border rounded-md overflow-hidden">
+                                    <div className="w-2/6 bg-white p-[4px] flex items-center">
+                                        <div className="bg-gray-100 hover:bg-gray-200 transition-colors rounded-[2px] w-full focus:outline-none shadow-none border-0">
+                                            <Select
+                                                value={assetType}
+                                                onValueChange={setAssetType}
+                                                className="rounded-[15px]"
                                             >
-                                                {suggestion.symbol} -{" "}
-                                                {suggestion.name}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
+                                                <SelectTrigger className="w-full h-full border-0 focus:ring-0 bg-transparent px-2 py-1.5 focus:outline-none shadow-none border-0">
+                                                    <SelectValue placeholder="Type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="stock">
+                                                        Stock/ETF
+                                                    </SelectItem>
+                                                    <SelectItem value="crypto">
+                                                        Crypto/DeFi
+                                                    </SelectItem>
+                                                    <SelectItem value="custom">
+                                                        Custom Asset
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    <Input
+                                        id="symbol"
+                                        className="w-4/6 border-0 focus:ring-0 focus:outline-none shadow-none py-1.5"
+                                        value={symbol}
+                                        onChange={(e) => {
+                                            const value =
+                                                e.target.value.toUpperCase()
+                                            setSymbol(value)
+                                            fetchSuggestions(value)
+                                        }}
+                                        onBlur={() => {
+                                            setTimeout(
+                                                () => setShowSuggestions(false),
+                                                200
+                                            )
+                                        }}
+                                        placeholder={
+                                            assetType === "crypto"
+                                                ? "e.g., BTC"
+                                                : assetType === "custom"
+                                                ? "e.g., house"
+                                                : "e.g., AAPL"
+                                        }
+                                        required
+                                    />
+                                </div>
+                                {assetType === "stock" &&
+                                    showSuggestions &&
+                                    suggestions.length > 0 && (
+                                        <ul className="absolute z-10 w-full bg-white border border-gray-300 mt-1 max-h-60 overflow-auto">
+                                            {suggestions.map((suggestion) => (
+                                                <li
+                                                    key={suggestion.symbol}
+                                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault()
+                                                        setSymbol(
+                                                            suggestion.symbol
+                                                        )
+                                                        setShowSuggestions(
+                                                            false
+                                                        )
+                                                        const symbolInput =
+                                                            document.getElementById(
+                                                                "symbol"
+                                                            )
+                                                        if (symbolInput) {
+                                                            symbolInput.value =
+                                                                suggestion.symbol
+                                                        }
+                                                    }}
+                                                >
+                                                    {suggestion.symbol} -{" "}
+                                                    {suggestion.name}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
                             </div>
                             <div>
                                 <Label htmlFor="shares">Number of Shares</Label>

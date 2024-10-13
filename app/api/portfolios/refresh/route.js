@@ -10,7 +10,6 @@ export async function POST(request) {
         const portfoliosCollection = db.collection("portfolios")
         const assetsCollection = db.collection("assets")
 
-        // Get user's portfolio
         const portfolio = await portfoliosCollection.findOne({ userEmail })
 
         if (!portfolio) {
@@ -28,13 +27,16 @@ export async function POST(request) {
             return NextResponse.json({ message: "Portfolio is up to date" })
         }
 
-        // Update prices for each asset
         for (const [symbol, asset] of Object.entries(portfolio.assets)) {
             const assetDoc = await assetsCollection.findOne({ symbol })
 
             if (!assetDoc) {
                 console.error(`Asset ${symbol} not found in the database`)
                 continue
+            }
+
+            if (assetDoc.assetType === "custom") {
+                continue // Skip custom assets
             }
 
             const latestPriceDate = new Date(
@@ -49,17 +51,15 @@ export async function POST(request) {
             )
 
             if (latestPriceDate < threeDaysAgo) {
-                // Fetch new prices from Alpha Vantage
                 const newPrices = await fetchPricesFromAlphaVantage(
                     symbol,
                     "DAILY",
-                    latestPriceDate
+                    latestPriceDate,
+                    assetDoc.assetType
                 )
 
-                // Merge new prices with existing prices
                 const updatedPrices = { ...assetDoc.prices, ...newPrices }
 
-                // Update asset document
                 await assetsCollection.updateOne(
                     { symbol },
                     {
@@ -71,7 +71,7 @@ export async function POST(request) {
                 )
             }
         }
-        // Update portfolio's lastRefreshed date
+
         await portfoliosCollection.updateOne(
             { userEmail },
             { $set: { lastRefreshed: now } }

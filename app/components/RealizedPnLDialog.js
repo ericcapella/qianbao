@@ -35,7 +35,11 @@ export default function RealizedPnLDialog({ children }) {
             const response = await fetch(url)
             if (response.ok) {
                 const data = await response.json()
-                setPnlData(data)
+                // Filter out assets without sell transactions
+                const filteredData = data.filter(
+                    (item) => item.totalSharesSold > 0
+                )
+                setPnlData(filteredData)
             } else {
                 console.error("Error response from API:", await response.text())
             }

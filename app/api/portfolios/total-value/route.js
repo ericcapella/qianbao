@@ -45,6 +45,7 @@ export async function GET(request) {
                     value: assetValue,
                     paidPerShare: asset.paidPerShare,
                     currentPrice: latestPrice,
+                    assetType: assetData.assetType,
                 }
 
                 // Calculate value 30 days ago
@@ -61,6 +62,18 @@ export async function GET(request) {
                         : latestPrice
 
                 totalValueThirtyDaysAgo += asset.shares * priceThirtyDaysAgo
+            } else if (asset.assetType === "custom") {
+                // Handle custom assets
+                const assetValue = asset.shares * asset.paidPerShare
+                totalValue += assetValue
+                totalValueThirtyDaysAgo += assetValue
+                assets[symbol] = {
+                    shares: asset.shares,
+                    value: assetValue,
+                    paidPerShare: asset.paidPerShare,
+                    currentPrice: asset.paidPerShare,
+                    assetType: "custom",
+                }
             }
         }
 
