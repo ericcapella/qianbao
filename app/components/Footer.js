@@ -11,7 +11,7 @@ export default function Footer() {
                         <ul className="space-y-2">
                             <li>
                                 <Link
-                                    href="https://ghostfol.io/en/start?ref=qianbao.finance"
+                                    href="https://ghostfol.io/?ref=qianbao.finance"
                                     className="text-base text-muted-foreground hover:underline"
                                     target="_blank"
                                     rel="noopener noreferrer"

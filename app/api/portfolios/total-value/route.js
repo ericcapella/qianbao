@@ -38,6 +38,7 @@ export async function GET(request) {
                     (a, b) => new Date(b[0]) - new Date(a[0])
                 )
                 const latestPrice = parseFloat(pricesArray[0][1])
+                const lastPriceDate = pricesArray[0][0]
                 const assetValue = asset.shares * latestPrice
                 totalValue += assetValue
                 assets[symbol] = {
@@ -46,6 +47,7 @@ export async function GET(request) {
                     paidPerShare: asset.paidPerShare,
                     currentPrice: latestPrice,
                     assetType: assetData.assetType,
+                    lastPriceDate: lastPriceDate,
                 }
 
                 // Calculate value 30 days ago

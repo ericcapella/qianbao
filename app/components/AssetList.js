@@ -11,7 +11,13 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatNumber } from "@/lib/utils"
+import { formatNumber, formatDate } from "@/lib/utils"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function AssetList({ children }) {
     const [assets, setAssets] = useState([])
@@ -43,6 +49,7 @@ export default function AssetList({ children }) {
                         buyInPrice: asset.paidPerShare,
                         profitLoss:
                             asset.value - asset.paidPerShare * asset.shares,
+                        lastPriceDate: asset.lastPriceDate,
                     }))
                 setAssets(assetData)
             }
@@ -84,8 +91,24 @@ export default function AssetList({ children }) {
                                             {asset.symbol.toUpperCase()}
                                         </TableCell>
                                         <TableCell className="text-left whitespace-nowrap">
-                                            {formatNumber(asset.currentPrice)}
-                                            &nbsp;€
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        {formatNumber(
+                                                            asset.currentPrice
+                                                        )}
+                                                        &nbsp;€
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>
+                                                            Last updated:{" "}
+                                                            {formatDate(
+                                                                asset.lastPriceDate
+                                                            )}
+                                                        </p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         </TableCell>
                                         <TableCell className="text-left">
                                             <div className="whitespace-nowrap">

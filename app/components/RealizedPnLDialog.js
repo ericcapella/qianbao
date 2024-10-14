@@ -53,7 +53,7 @@ export default function RealizedPnLDialog({ children }) {
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="sm:max-w-[80%]">
                 <DialogHeader>
-                    <DialogTitle>All time realized PnL by asset</DialogTitle>
+                    <DialogTitle>Realized PnL by asset (All time)</DialogTitle>
                 </DialogHeader>
                 <Table>
                     <TableHeader>
