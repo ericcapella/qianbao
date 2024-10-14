@@ -227,7 +227,7 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                     </div>
                                     <Input
                                         id="symbol"
-                                        className="w-4/6 border-0 focus:ring-0 focus:outline-none shadow-none py-1.5"
+                                        className="w-4/6 border-0 focus:ring-0 focus:outline-none shadow-none py-1.5 mt-[2px] mr-[2px]"
                                         value={symbol}
                                         onChange={(e) => {
                                             const value =

@@ -196,39 +196,39 @@ export default function TransactionList({ transactions }) {
                                         .toUpperCase()}{" "}
                                     {/* Unescape dots */}
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right whitespace-nowrap">
                                     {formatNumber(
                                         transaction.operation === "buy"
                                             ? transaction.totalPaid /
                                                   transaction.shares
                                             : transaction.totalReceived /
                                                   transaction.shares
-                                    )}{" "}
-                                    €
+                                    )}
+                                    &nbsp;€
                                 </TableCell>
                                 <TableCell className="text-right">
                                     {transaction.shares}
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right whitespace-nowrap">
                                     {formatNumber(
                                         transaction.operation === "buy"
                                             ? transaction.totalPaid
                                             : transaction.totalReceived
-                                    )}{" "}
-                                    €
+                                    )}
+                                    &nbsp;€
                                 </TableCell>
                                 <TableCell
                                     className={`text-right ${
                                         transaction.pnl > 0
                                             ? "text-green-500"
                                             : "text-red-500"
-                                    }`}
+                                    } whitespace-nowrap`}
                                 >
                                     {transaction.operation === "sell"
                                         ? `${formatNumber(transaction.pnl)} €`
                                         : ""}
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right whitespace-nowrap">
                                     {formatDate(transaction.date)}
                                 </TableCell>
                             </TableRow>

@@ -23,6 +23,7 @@ import Image from "next/image"
 import DashboardSkeleton from "../components/DashboardSkeleton"
 import Link from "next/link"
 import { RefreshCcw } from "lucide-react"
+import Footer from "../components/Footer"
 
 export default function Dashboard() {
     const [refreshKey, setRefreshKey] = useState(0)
@@ -185,8 +186,6 @@ export default function Dashboard() {
                                 </p>
                             </div>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>Support</DropdownMenuItem>
-                            <DropdownMenuSeparator />
                             <DropdownMenuItem onSelect={handleLogout}>
                                 Logout
                             </DropdownMenuItem>
@@ -238,6 +237,7 @@ export default function Dashboard() {
                     </>
                 )}
             </main>
+            <Footer />
         </div>
     )
 }

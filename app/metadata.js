@@ -1,8 +1,11 @@
 export const metadata = {
-    title: "QianBao - Investment Portfolio Tracker all assets in one place",
+    title: "QianBao - Simple and privacy-first investment portfolio tracker",
     description:
-        "Add and track any asset including stocks, ETFs, funds, DeFi investments, real estate, angel investments, luxury collectibles, art and commodities and more.",
+        "Track stocks, ETFs, crypto, and more. Monitor your net worth in real-time with QianBao, an open-source, simple and privacy-focused portfolio tracker.",
     icons: {
         icon: "/icon-removebg-preview.png",
+    },
+    openGraph: {
+        images: ["/icon-removebg-preview.png"],
     },
 }

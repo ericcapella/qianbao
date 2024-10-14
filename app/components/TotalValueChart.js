@@ -198,7 +198,10 @@ export default function TotalValueChart() {
         const date = new Date(tickItem)
         switch (timeRange) {
             case "1M":
-                return `Week ${getWeekNumber(date)} ${date.toLocaleString(
+                const mondayDate = new Date(
+                    date.setDate(date.getDate() - date.getDay() + 1)
+                )
+                return `Week ${mondayDate.getDate()} ${date.toLocaleString(
                     "default",
                     { month: "short" }
                 )}`
@@ -298,6 +301,11 @@ export default function TotalValueChart() {
                             axisLine={true}
                             tickLine={true}
                             style={{ fontSize: "0.8rem" }}
+                            angle={window.innerWidth <= 640 ? -45 : 0}
+                            textAnchor={
+                                window.innerWidth <= 640 ? "end" : "middle"
+                            }
+                            height={window.innerWidth <= 640 ? 50 : 30}
                         />
                         <YAxis
                             axisLine={true}

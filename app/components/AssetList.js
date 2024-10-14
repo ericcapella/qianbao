@@ -83,24 +83,27 @@ export default function AssetList({ children }) {
                                         <TableCell className="font-medium">
                                             {asset.symbol.toUpperCase()}
                                         </TableCell>
-                                        <TableCell className="text-left">
-                                            {formatNumber(asset.currentPrice)} €
+                                        <TableCell className="text-left whitespace-nowrap">
+                                            {formatNumber(asset.currentPrice)}
+                                            &nbsp;€
                                         </TableCell>
                                         <TableCell className="text-left">
-                                            <div>
-                                                {formatNumber(asset.invested)} €
+                                            <div className="whitespace-nowrap">
+                                                {formatNumber(asset.invested)}
+                                                &nbsp;€
                                             </div>
-                                            <div className="text-sm text-gray-500">
-                                                {formatNumber(asset.buyInPrice)}{" "}
-                                                €/share
+                                            <div className="text-sm text-gray-500 whitespace-nowrap">
+                                                {formatNumber(asset.buyInPrice)}
+                                                &nbsp;€/share
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-left">
-                                            <div>
-                                                {formatNumber(asset.position)} €
+                                            <div className="whitespace-nowrap">
+                                                {formatNumber(asset.position)}
+                                                &nbsp;€
                                             </div>
-                                            <div className="text-sm text-gray-500">
-                                                {asset.shares} shares
+                                            <div className="text-sm text-gray-500 whitespace-nowrap">
+                                                {asset.shares}&nbsp;shares
                                             </div>
                                         </TableCell>
                                         <TableCell
@@ -110,11 +113,11 @@ export default function AssetList({ children }) {
                                                     : "text-red-600"
                                             }`}
                                         >
-                                            <div>
-                                                {formatNumber(asset.profitLoss)}{" "}
-                                                €
+                                            <div className="whitespace-nowrap">
+                                                {formatNumber(asset.profitLoss)}
+                                                &nbsp;€
                                             </div>
-                                            <div className="text-sm">
+                                            <div className="text-sm whitespace-nowrap">
                                                 {(
                                                     (asset.profitLoss /
                                                         asset.invested) *
