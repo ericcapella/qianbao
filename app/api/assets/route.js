@@ -9,45 +9,44 @@ export async function POST(request) {
         const assetsCollection = db.collection("assets")
 
         const existingAsset = await assetsCollection.findOne({ symbol })
+
+        // If the asset doesn't exist in the assets collection, treat it as a custom asset
+        if (!existingAsset) {
+            console.log(
+                `Asset ${symbol} not found in assets collection. Treating as custom asset.`
+            )
+            return NextResponse.json({
+                message: "Custom asset processed successfully",
+            })
+        }
+
         const inputDate = new Date(date)
         const twoDaysAgo = new Date()
         twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
 
-        let prices = existingAsset ? existingAsset.prices : {}
+        let prices = existingAsset.prices || {}
         let needsUpdate = false
 
-        if (
-            !existingAsset ||
-            !existingAsset.prices ||
-            Object.keys(existingAsset.prices).length === 0
-        ) {
+        if (Object.keys(prices).length === 0) {
             needsUpdate = true
         } else {
             const mostRecentDate = new Date(
-                Math.max(
-                    ...Object.keys(existingAsset.prices).map(
-                        (date) => new Date(date)
-                    )
-                )
+                Math.max(...Object.keys(prices).map((date) => new Date(date)))
             )
             if (mostRecentDate < twoDaysAgo) {
                 needsUpdate = true
             }
 
             const oldestDate = new Date(
-                Math.min(
-                    ...Object.keys(existingAsset.prices).map(
-                        (date) => new Date(date)
-                    )
-                )
+                Math.min(...Object.keys(prices).map((date) => new Date(date)))
             )
             if (inputDate < oldestDate) {
                 needsUpdate = true
             }
         }
 
-        if (needsUpdate && assetType !== "custom") {
-            const timeSeriesType = inputDate < twoDaysAgo ? "DAILY" : "DAILY"
+        if (needsUpdate) {
+            const timeSeriesType = "DAILY"
             const newPrices = await fetchPricesFromAlphaVantage(
                 symbol,
                 timeSeriesType,
@@ -57,20 +56,18 @@ export async function POST(request) {
             prices = mergePrices(prices, newPrices)
         }
 
-        if (assetType !== "custom") {
-            await assetsCollection.updateOne(
-                { symbol },
-                {
-                    $set: {
-                        symbol,
-                        prices,
-                        lastRefreshed: new Date(),
-                        assetType,
-                    },
+        await assetsCollection.updateOne(
+            { symbol },
+            {
+                $set: {
+                    symbol,
+                    prices,
+                    lastRefreshed: new Date(),
+                    assetType,
                 },
-                { upsert: true }
-            )
-        }
+            },
+            { upsert: true }
+        )
 
         return NextResponse.json({
             message: "Asset added/updated successfully",
@@ -184,6 +181,7 @@ export async function PUT(request) {
         const db = client.db("stocktracker")
         const transactionsCollection = db.collection("transactions")
         const portfoliosCollection = db.collection("portfolios")
+        const assetsCollection = db.collection("assets")
 
         if (
             !symbol ||
@@ -217,7 +215,8 @@ export async function PUT(request) {
                 totalAmount,
                 userEmail,
                 transactionsCollection,
-                portfoliosCollection
+                portfoliosCollection,
+                assetsCollection
             )
         } else {
             return NextResponse.json(
@@ -228,7 +227,7 @@ export async function PUT(request) {
     } catch (error) {
         console.error("Error processing transaction:", error)
         return NextResponse.json(
-            { error: "Internal Server Error" },
+            { error: error.message || "Internal Server Error" },
             { status: 500 }
         )
     }
@@ -299,61 +298,84 @@ async function handleSellTransaction(
     totalReceived,
     userEmail,
     transactionsCollection,
-    portfoliosCollection
+    portfoliosCollection,
+    assetsCollection
 ) {
-    const escapedSymbol = symbol.replace(/\./g, "\uFF0E") // Escape dots
+    console.log("Entering handleSellTransaction")
+    console.log("Symbol:", symbol)
+    console.log("Date:", date)
+    console.log("Shares:", shares)
+    console.log("Total Received:", totalReceived)
+    console.log("User Email:", userEmail)
+
+    const escapedSymbol = symbol.replace(/\./g, "．")
+    console.log("Escaped Symbol:", escapedSymbol)
 
     const portfolio = await portfoliosCollection.findOne({ userEmail })
-    if (
-        !portfolio ||
-        !portfolio.assets ||
-        !portfolio.assets[escapedSymbol] ||
-        portfolio.assets[escapedSymbol].shares < parseFloat(shares)
-    ) {
+    console.log("Portfolio:", JSON.stringify(portfolio))
+
+    if (!portfolio || !portfolio.assets[escapedSymbol]) {
+        console.log("Asset not found in portfolio")
         return NextResponse.json(
-            { error: "Not enough shares to sell" },
-            { status: 400 }
+            { error: "Asset not found in portfolio" },
+            { status: 404 }
         )
     }
 
-    const buyTransactions = await transactionsCollection
-        .find({ userEmail, symbol: escapedSymbol, operation: "buy" }) // Use escaped symbol
-        .sort({ date: 1 })
-        .toArray()
+    const existingAsset = portfolio.assets[escapedSymbol]
+    console.log("Existing Asset:", JSON.stringify(existingAsset))
+
+    const isCustomAsset = !(await assetsCollection.findOne({
+        symbol: escapedSymbol,
+    }))
+    console.log("Is Custom Asset:", isCustomAsset)
 
     let sharesToSell = parseFloat(shares)
     let totalCostBasis = 0
-    let updatedBuyTransactions = []
 
-    for (let buyTx of buyTransactions) {
-        if (sharesToSell <= 0) break
-
-        const availableShares = buyTx.shares - (buyTx.soldShares || 0)
-        const sharesToSellFromThisTx = Math.min(availableShares, sharesToSell)
-
-        totalCostBasis +=
-            (sharesToSellFromThisTx / buyTx.shares) * buyTx.totalPaid
-        sharesToSell -= sharesToSellFromThisTx
-
-        updatedBuyTransactions.push({
-            updateOne: {
-                filter: { _id: buyTx._id },
-                update: { $inc: { soldShares: sharesToSellFromThisTx } },
-            },
-        })
-    }
-
-    if (sharesToSell > 0) {
+    if (sharesToSell > existingAsset.shares) {
         return NextResponse.json(
             { error: "Not enough shares to sell" },
             { status: 400 }
         )
     }
 
+    if (isCustomAsset) {
+        console.log("Processing custom asset sell")
+        totalCostBasis = existingAsset.paidPerShare * sharesToSell
+    } else {
+        console.log("Processing non-custom asset sell")
+        const buyTransactions = await transactionsCollection
+            .find({ userEmail, symbol: escapedSymbol, operation: "buy" })
+            .sort({ date: 1 })
+            .toArray()
+        console.log("Buy Transactions:", JSON.stringify(buyTransactions))
+
+        for (let buyTx of buyTransactions) {
+            if (sharesToSell <= 0) break
+
+            const availableShares = buyTx.shares - (buyTx.soldShares || 0)
+            const sharesToSellFromThisTx = Math.min(
+                availableShares,
+                sharesToSell
+            )
+
+            totalCostBasis +=
+                (sharesToSellFromThisTx / buyTx.shares) * buyTx.totalPaid
+            sharesToSell -= sharesToSellFromThisTx
+
+            await transactionsCollection.updateOne(
+                { _id: buyTx._id },
+                { $inc: { soldShares: sharesToSellFromThisTx } }
+            )
+        }
+    }
+
     const pnl = parseFloat(totalReceived) - totalCostBasis
+    console.log("Calculated PNL:", pnl)
 
     const newSellTransaction = {
-        symbol: escapedSymbol, // Store escaped symbol
+        symbol: escapedSymbol,
         date,
         shares: parseFloat(shares),
         totalReceived: parseFloat(totalReceived),
@@ -361,15 +383,15 @@ async function handleSellTransaction(
         operation: "sell",
         pnl,
     }
+    console.log("New Sell Transaction:", JSON.stringify(newSellTransaction))
 
     await transactionsCollection.insertOne(newSellTransaction)
-    await transactionsCollection.bulkWrite(updatedBuyTransactions)
 
-    const existingAsset = portfolio.assets[escapedSymbol]
     const updatedShares = existingAsset.shares - parseFloat(shares)
+    console.log("Updated Shares:", updatedShares)
 
     if (updatedShares === 0) {
-        // Remove the asset from the portfolio
+        console.log("Removing asset from portfolio")
         await portfoliosCollection.updateOne(
             { userEmail },
             {
@@ -378,12 +400,14 @@ async function handleSellTransaction(
             }
         )
     } else {
+        console.log("Updating asset in portfolio")
         const updatedAsset = {
             shares: updatedShares,
             totalPaid: existingAsset.totalPaid - totalCostBasis,
             paidPerShare:
                 (existingAsset.totalPaid - totalCostBasis) / updatedShares,
         }
+        console.log("Updated Asset:", JSON.stringify(updatedAsset))
 
         await portfoliosCollection.updateOne(
             { userEmail },
@@ -396,8 +420,7 @@ async function handleSellTransaction(
         )
     }
 
-    return NextResponse.json(
-        { message: "Sell transaction added successfully", pnl },
-        { status: 201 }
-    )
+    return NextResponse.json({
+        message: "Sell transaction processed successfully",
+    })
 }

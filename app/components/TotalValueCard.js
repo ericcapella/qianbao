@@ -1,9 +1,22 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { formatNumber } from "@/lib/utils"
 import RealizedPnLDialog from "./RealizedPnLDialog"
 import { useSession } from "next-auth/react"
+import { motion, useSpring, useTransform } from "framer-motion"
+
+const AnimatedNumber = ({ value }) => {
+    const spring = useSpring(0, { stiffness: 9999, damping: 5000 })
+    const display = useTransform(spring, (current) => formatNumber(current))
+
+    useEffect(() => {
+        spring.set(value)
+    }, [spring, value])
+
+    return <motion.span>{display}</motion.span>
+}
 
 export default function TotalValueCard({
     totalValue,
@@ -23,10 +36,10 @@ export default function TotalValueCard({
                         Total Portfolio
                     </span>
                     <span className="text-2xl font-bold">
-                        {formatNumber(totalValue)}€
+                        <AnimatedNumber value={totalValue} />€
                     </span>
                     <span className={`text-xs ${textColor}`}>
-                        {formatNumber(Math.abs(variation.value))}€{" "}
+                        <AnimatedNumber value={Math.abs(variation.value)} />€{" "}
                         {isPositive ? "▲" : "▼"}
                         {Math.abs(variation.percentage).toFixed(2)}%
                     </span>
@@ -36,7 +49,7 @@ export default function TotalValueCard({
                         Total Invested
                     </span>
                     <span className="text-2xl font-bold">
-                        {formatNumber(totalInvestedInPeriod)}€
+                        <AnimatedNumber value={totalInvestedInPeriod} />€
                     </span>
                 </div>
                 <RealizedPnLDialog session={session}>
@@ -51,7 +64,7 @@ export default function TotalValueCard({
                                     : "text-red-500"
                             }`}
                         >
-                            {formatNumber(totalPnLInPeriod)}€
+                            <AnimatedNumber value={totalPnLInPeriod} />€
                         </span>
                     </div>
                 </RealizedPnLDialog>

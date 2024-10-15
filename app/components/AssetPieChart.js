@@ -98,11 +98,14 @@ export default function AssetPieChart() {
                         cy="50%"
                         innerRadius={0}
                         outerRadius={80}
-                        // paddingAngle={5}
                         label={({ symbol, percentage }) =>
                             `${symbol} ${percentage.toFixed(0)}%`
                         }
                         labelLine={false}
+                        isAnimationActive={true}
+                        animationBegin={0}
+                        animationDuration={200}
+                        animationEasing="linear"
                     >
                         {chartData.map((entry, index) => (
                             <Cell

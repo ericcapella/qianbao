@@ -28,7 +28,11 @@ export async function GET(request) {
         const assetPrices = await Promise.all(
             symbols.map(async (symbol) => {
                 const asset = await assetsCollection.findOne({ symbol })
-                return { symbol, prices: asset.prices }
+                return {
+                    symbol,
+                    prices: asset ? asset.prices : null,
+                    assetType: asset ? asset.assetType : "custom",
+                }
             })
         )
 
@@ -72,6 +76,11 @@ export async function GET(request) {
 }
 
 function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
+    console.log("Entering calculatePortfolioHistory")
+    console.log("Transactions:", JSON.stringify(transactions))
+    console.log("AssetPrices:", JSON.stringify(assetPrices))
+    console.log("TimeRange:", timeRange)
+
     const portfolioHistory = []
     const startDate = getStartDate(transactions, timeRange)
     const endDate = new Date()
@@ -106,7 +115,8 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
             portfolio,
             assetPrices,
             startDate,
-            lastKnownPrices
+            lastKnownPrices,
+            transactions
         )
         lastKnownValue = startValue
 
@@ -114,11 +124,23 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
         Object.entries(portfolio).forEach(([symbol, shares]) => {
             if (shares > 0) {
                 const asset = assetPrices.find((a) => a.symbol === symbol)
-                if (asset) {
+                if (asset && asset.prices) {
                     const price = findClosestPrice(asset.prices, startDate)
                     activeAssets[symbol] = {
                         shares,
                         initialValue: shares * price,
+                    }
+                } else {
+                    const customAsset = transactions.find(
+                        (t) => t.symbol === symbol && t.operation === "buy"
+                    )
+                    if (customAsset) {
+                        activeAssets[symbol] = {
+                            shares,
+                            initialValue:
+                                shares *
+                                (customAsset.totalPaid / customAsset.shares),
+                        }
                     }
                 }
             }
@@ -130,6 +152,7 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
         date <= endDate;
         date.setDate(date.getDate() + 1)
     ) {
+        console.log("Processing date:", date.toISOString().split("T")[0])
         const dailyTransactions = transactions.filter(
             (t) => new Date(t.date).toDateString() === date.toDateString()
         )
@@ -172,19 +195,31 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
             portfolio,
             assetPrices,
             date,
-            lastKnownPrices
+            lastKnownPrices,
+            transactions
         )
 
         // Calculate portfolio distribution
         const distribution = Object.entries(portfolio).reduce(
             (acc, [symbol, shares]) => {
                 const asset = assetPrices.find((a) => a.symbol === symbol)
-                if (asset) {
+                if (asset && asset.prices) {
                     const price = findClosestPrice(asset.prices, date)
                     const value =
                         shares *
                         (price !== 0 ? price : lastKnownPrices[symbol] || 0)
                     acc[symbol] = (value / portfolioValue) * 100
+                } else {
+                    // Handle custom assets
+                    const customAsset = transactions.find(
+                        (t) => t.symbol === symbol && t.operation === "buy"
+                    )
+                    if (customAsset) {
+                        const value =
+                            shares *
+                            (customAsset.totalPaid / customAsset.shares)
+                        acc[symbol] = (value / portfolioValue) * 100
+                    }
                 }
                 return acc
             },
@@ -215,11 +250,25 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
             Object.entries(portfolio).forEach(([symbol, shares]) => {
                 if (shares > 0) {
                     const asset = assetPrices.find((a) => a.symbol === symbol)
-                    if (asset) {
+                    if (asset && asset.prices) {
                         const price = findClosestPrice(asset.prices, date)
                         activeAssets[symbol] = {
                             shares,
                             initialValue: shares * price,
+                        }
+                    } else {
+                        // Handle custom assets
+                        const customAsset = transactions.find(
+                            (t) => t.symbol === symbol && t.operation === "buy"
+                        )
+                        if (customAsset) {
+                            activeAssets[symbol] = {
+                                shares,
+                                initialValue:
+                                    shares *
+                                    (customAsset.totalPaid /
+                                        customAsset.shares),
+                            }
                         }
                     }
                 }
@@ -282,22 +331,52 @@ function calculatePortfolioValue(
     portfolio,
     assetPrices,
     date,
-    lastKnownPrices
+    lastKnownPrices,
+    transactions
 ) {
+    console.log("Entering calculatePortfolioValue")
+    console.log("Portfolio:", JSON.stringify(portfolio))
+    console.log("Date:", date.toISOString().split("T")[0])
+
     return Object.entries(portfolio).reduce((total, [symbol, shares]) => {
+        console.log("Processing symbol:", symbol)
         const asset = assetPrices.find((a) => a.symbol === symbol)
-        if (asset) {
+        console.log("Asset found:", asset ? "Yes" : "No")
+
+        if (asset && asset.prices) {
             const price = findClosestPrice(asset.prices, date)
             return (
                 total +
                 shares * (price !== 0 ? price : lastKnownPrices[symbol] || 0)
             )
+        } else {
+            // Handle custom assets
+            const customAsset = transactions.find(
+                (t) => t.symbol === symbol && t.operation === "buy"
+            )
+            if (customAsset) {
+                console.log("Custom asset found:", symbol)
+                return (
+                    total +
+                    shares * (customAsset.totalPaid / customAsset.shares)
+                )
+            }
+            console.log("Asset not found and not a custom asset:", symbol)
+            return total
         }
-        return total
     }, 0)
 }
 
 function findClosestPrice(prices, date) {
+    console.log("Entering findClosestPrice")
+    console.log("Prices:", JSON.stringify(prices))
+    console.log("Date:", date.toISOString().split("T")[0])
+
+    if (!prices) {
+        console.log("Prices are null or undefined")
+        return 0
+    }
+
     const dateString = date.toISOString().split("T")[0]
     const pricesArray = Object.entries(prices).sort(
         (a, b) => new Date(b[0]) - new Date(a[0])

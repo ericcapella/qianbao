@@ -166,7 +166,13 @@ export default function TotalValueChart() {
             if (response.ok) {
                 const data = await response.json()
                 console.log("Received data from API:", data)
-                setChartData(data.history)
+
+                // Filter out any data points with zero value
+                const filteredHistory = data.history.filter(
+                    (item) => item.value > 0
+                )
+
+                setChartData(filteredHistory)
                 setTotalValue(data.totalValue)
                 setVariation(data.variation)
                 setStartValue(data.startValue)
@@ -174,7 +180,7 @@ export default function TotalValueChart() {
                 setTotalPnLInPeriod(data.totalPnLInPeriod)
                 setTransactions(data.transactions)
                 setPortfolioDistribution(
-                    data.history.reduce((acc, item) => {
+                    filteredHistory.reduce((acc, item) => {
                         acc[item.date] = item.distribution
                         return acc
                     }, {})

@@ -64,7 +64,7 @@ export async function GET(request) {
                         : latestPrice
 
                 totalValueThirtyDaysAgo += asset.shares * priceThirtyDaysAgo
-            } else if (asset.assetType === "custom") {
+            } else {
                 // Handle custom assets
                 const assetValue = asset.shares * asset.paidPerShare
                 totalValue += assetValue
@@ -75,6 +75,7 @@ export async function GET(request) {
                     paidPerShare: asset.paidPerShare,
                     currentPrice: asset.paidPerShare,
                     assetType: "custom",
+                    lastPriceDate: new Date().toISOString().split("T")[0],
                 }
             }
         }

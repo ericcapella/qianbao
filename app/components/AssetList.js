@@ -11,7 +11,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatNumber, formatDate } from "@/lib/utils"
+import { formatNumber, formatDate, formatShares } from "@/lib/utils"
 import {
     Tooltip,
     TooltipContent,
@@ -41,7 +41,7 @@ export default function AssetList({ children }) {
                 const assetData = Object.entries(data.assets)
                     .filter(([_, asset]) => asset.shares > 0)
                     .map(([symbol, asset]) => ({
-                        symbol: symbol.replace(/\uFF0E/g, "."), // Unescape dots
+                        symbol: symbol.replace(/\uFF0E/g, "."),
                         currentPrice: asset.currentPrice,
                         invested: asset.shares * asset.paidPerShare,
                         position: asset.value,
@@ -50,6 +50,7 @@ export default function AssetList({ children }) {
                         profitLoss:
                             asset.value - asset.paidPerShare * asset.shares,
                         lastPriceDate: asset.lastPriceDate,
+                        assetType: asset.assetType,
                     }))
                 setAssets(assetData)
             }
@@ -126,7 +127,8 @@ export default function AssetList({ children }) {
                                                 &nbsp;€
                                             </div>
                                             <div className="text-sm text-gray-500 whitespace-nowrap">
-                                                {asset.shares}&nbsp;shares
+                                                {formatShares(asset.shares)}
+                                                &nbsp;shares
                                             </div>
                                         </TableCell>
                                         <TableCell
