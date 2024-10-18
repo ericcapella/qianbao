@@ -58,9 +58,7 @@ export default function Dashboard() {
             )
             setLastRefreshed(data.lastRefreshed)
             setOldestPriceDate(data.oldestPriceDate)
-        } catch (error) {
-            console.error("Error fetching portfolio data:", error)
-        }
+        } catch (error) {}
     }
 
     const fetchTransactions = async () => {
@@ -77,7 +75,6 @@ export default function Dashboard() {
             }))
             setTransactions(unescapedData)
         } catch (error) {
-            console.error("Error fetching transactions:", error)
         } finally {
             setIsDataLoading(false)
         }
@@ -107,14 +104,11 @@ export default function Dashboard() {
                 body: JSON.stringify({ userEmail: session.user.email }),
             })
 
-            console.log("Portfolio refresh response:", response)
-
             // Refresh the dashboard data regardless of the response
             setRefreshKey((prevKey) => prevKey + 1)
             fetchTransactions()
             fetchPortfolioData()
         } catch (error) {
-            console.error("Error refreshing portfolio:", error)
             // Optionally, you can show an error message to the user here
         }
     }

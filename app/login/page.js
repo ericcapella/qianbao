@@ -88,11 +88,12 @@ export default function Login() {
                             />
                         </div>
                         <div className="grid gap-2">
-                            <div className="flex items-center">
+                            <div className="flex items-center justify-between">
                                 <Label htmlFor="password">Password</Label>
                                 <Link
                                     href={`mailto:support@qianbao.finance?subject=I forgot my password&body=My email is ${email}`}
-                                    className="ml-auto inline-block text-sm underline"
+                                    className="text-sm underline"
+                                    tabIndex="-1"
                                 >
                                     Forgot your password?
                                 </Link>
