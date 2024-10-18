@@ -10,10 +10,9 @@ export async function POST(request) {
 
         const existingAsset = await assetsCollection.findOne({ symbol })
 
-        // If the asset doesn't exist in the assets collection, treat it as a custom asset
-        if (!existingAsset) {
+        if (assetType === "custom") {
             console.log(
-                `Asset ${symbol} not found in assets collection. Treating as custom asset.`
+                `Asset ${symbol} is a custom asset. No need to fetch prices.`
             )
             return NextResponse.json({
                 message: "Custom asset processed successfully",
@@ -24,10 +23,10 @@ export async function POST(request) {
         const twoDaysAgo = new Date()
         twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
 
-        let prices = existingAsset.prices || {}
+        let prices = existingAsset ? existingAsset.prices || {} : {}
         let needsUpdate = false
 
-        if (Object.keys(prices).length === 0) {
+        if (!existingAsset || Object.keys(prices).length === 0) {
             needsUpdate = true
         } else {
             const mostRecentDate = new Date(
@@ -80,7 +79,6 @@ export async function POST(request) {
         )
     }
 }
-
 function mergePrices(existingPrices, newPrices) {
     const mergedPrices = { ...existingPrices }
     for (const [date, price] of Object.entries(newPrices)) {
@@ -175,8 +173,15 @@ export async function GET(request) {
 
 export async function PUT(request) {
     try {
-        const { symbol, date, shares, totalAmount, userEmail, operation } =
-            await request.json()
+        const {
+            symbol,
+            date,
+            shares,
+            totalAmount,
+            userEmail,
+            operation,
+            assetType,
+        } = await request.json()
         const client = await clientPromise
         const db = client.db("stocktracker")
         const transactionsCollection = db.collection("transactions")
@@ -189,7 +194,8 @@ export async function PUT(request) {
             !shares ||
             !totalAmount ||
             !userEmail ||
-            !operation
+            !operation ||
+            !assetType
         ) {
             return NextResponse.json(
                 { error: "All fields are required" },
@@ -205,7 +211,8 @@ export async function PUT(request) {
                 totalAmount,
                 userEmail,
                 transactionsCollection,
-                portfoliosCollection
+                portfoliosCollection,
+                assetType
             )
         } else if (operation === "sell") {
             return handleSellTransaction(
@@ -216,7 +223,8 @@ export async function PUT(request) {
                 userEmail,
                 transactionsCollection,
                 portfoliosCollection,
-                assetsCollection
+                assetsCollection,
+                assetType
             )
         } else {
             return NextResponse.json(
@@ -240,7 +248,8 @@ async function handleBuyTransaction(
     totalPaid,
     userEmail,
     transactionsCollection,
-    portfoliosCollection
+    portfoliosCollection,
+    assetType
 ) {
     const escapedSymbol = symbol.replace(/\./g, "\uFF0E") // Escape dots
 
@@ -299,7 +308,8 @@ async function handleSellTransaction(
     userEmail,
     transactionsCollection,
     portfoliosCollection,
-    assetsCollection
+    assetsCollection,
+    assetType
 ) {
     console.log("Entering handleSellTransaction")
     console.log("Symbol:", symbol)
@@ -307,6 +317,7 @@ async function handleSellTransaction(
     console.log("Shares:", shares)
     console.log("Total Received:", totalReceived)
     console.log("User Email:", userEmail)
+    console.log("Asset Type:", assetType)
 
     const escapedSymbol = symbol.replace(/\./g, "．")
     console.log("Escaped Symbol:", escapedSymbol)
@@ -325,9 +336,7 @@ async function handleSellTransaction(
     const existingAsset = portfolio.assets[escapedSymbol]
     console.log("Existing Asset:", JSON.stringify(existingAsset))
 
-    const isCustomAsset = !(await assetsCollection.findOne({
-        symbol: escapedSymbol,
-    }))
+    const isCustomAsset = assetType === "custom"
     console.log("Is Custom Asset:", isCustomAsset)
 
     let sharesToSell = parseFloat(shares)

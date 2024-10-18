@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/chart"
 import { useSession } from "next-auth/react"
 import { formatNumber } from "@/lib/utils"
+import { fetchWithAuth } from "@/api-auth"
 
 export default function AssetPieChart() {
     const [chartData, setChartData] = useState([])
@@ -22,26 +23,23 @@ export default function AssetPieChart() {
 
     const fetchAssetData = async () => {
         try {
-            const response = await fetch(
+            const data = await fetchWithAuth(
                 `/api/portfolios/total-value?userEmail=${encodeURIComponent(
                     session.user.email
                 )}`
             )
-            if (response.ok) {
-                const data = await response.json()
-                const totalValue = Object.values(data.assets).reduce(
-                    (sum, asset) => sum + asset.value,
-                    0
-                )
-                const assetData = Object.entries(data.assets).map(
-                    ([symbol, asset]) => ({
-                        symbol: symbol.replace(/\uFF0E/g, "."), // Unescape dots
-                        value: asset.value,
-                        percentage: (asset.value / totalValue) * 100,
-                    })
-                )
-                setChartData(assetData)
-            }
+            const totalValue = Object.values(data.assets).reduce(
+                (sum, asset) => sum + asset.value,
+                0
+            )
+            const assetData = Object.entries(data.assets).map(
+                ([symbol, asset]) => ({
+                    symbol: symbol.replace(/\uFF0E/g, "."), // Unescape dots
+                    value: asset.value,
+                    percentage: (asset.value / totalValue) * 100,
+                })
+            )
+            setChartData(assetData)
         } catch (error) {
             console.error("Error fetching asset data:", error)
         }

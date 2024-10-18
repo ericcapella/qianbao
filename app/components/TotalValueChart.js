@@ -28,6 +28,7 @@ import {
 import { useSession } from "next-auth/react"
 import TotalValueCard from "./TotalValueCard"
 import { formatNumber } from "@/lib/utils"
+import { fetchWithAuth } from "@/api-auth"
 
 const CustomTooltip = ({
     active,
@@ -158,40 +159,36 @@ export default function TotalValueChart() {
 
     const fetchChartData = async () => {
         try {
-            const response = await fetch(
+            const data = await fetchWithAuth(
                 `/api/portfolios/value-history?userEmail=${encodeURIComponent(
                     session.user.email
                 )}&timeRange=${timeRange}&includeTransactions=true`
             )
-            if (response.ok) {
-                const data = await response.json()
-                console.log("Received data from API:", data)
+            console.log("Received data from API:", data)
 
-                // Filter out any data points with zero value
-                const filteredHistory = data.history.filter(
-                    (item) => item.value > 0
-                )
+            // Filter out any data points with zero value
+            const filteredHistory = data.history.filter(
+                (item) => item.value > 0
+            )
 
-                setChartData(filteredHistory)
-                setTotalValue(data.totalValue)
-                setVariation(data.variation)
-                setStartValue(data.startValue)
-                setTotalInvestedInPeriod(data.totalInvestedInPeriod)
-                setTotalPnLInPeriod(data.totalPnLInPeriod)
-                setTransactions(data.transactions)
-                setPortfolioDistribution(
-                    filteredHistory.reduce((acc, item) => {
-                        acc[item.date] = item.distribution
-                        return acc
-                    }, {})
-                )
-                console.log("Set transactions:", data.transactions)
+            setChartData(filteredHistory)
+            setTotalValue(data.totalValue)
+            setVariation(data.variation)
+            setStartValue(data.startValue)
+            setTotalInvestedInPeriod(data.totalInvestedInPeriod)
+            setTotalPnLInPeriod(data.totalPnLInPeriod)
+            setTransactions(data.transactions)
+            setPortfolioDistribution(
+                filteredHistory.reduce((acc, item) => {
+                    acc[item.date] = item.distribution
+                    return acc
+                }, {})
+            )
+            console.log("Set transactions:", data.transactions)
 
-                // Calculate and set the combined progression
-                const combinedValue =
-                    data.variation.value + data.totalPnLInPeriod
-                setCombinedProgression(combinedValue)
-            }
+            // Calculate and set the combined progression
+            const combinedValue = data.variation.value + data.totalPnLInPeriod
+            setCombinedProgression(combinedValue)
         } catch (error) {
             console.error("Error fetching chart data:", error)
         }

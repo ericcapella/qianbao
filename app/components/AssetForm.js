@@ -28,6 +28,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { fetchWithAuth } from "@/api-auth"
+import { formatShares } from "@/lib/utils"
 
 export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
     const [symbol, setSymbol] = useState("")
@@ -41,6 +43,7 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
     const [ownedAssets, setOwnedAssets] = useState([])
     const [maxShares, setMaxShares] = useState(0)
     const [assetType, setAssetType] = useState("stock")
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -69,7 +72,7 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
         }
 
         try {
-            const assetResponse = await fetch("/api/assets", {
+            const assetResponse = await fetchWithAuth("/api/assets", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -81,12 +84,8 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                 }),
             })
 
-            if (!assetResponse.ok) {
-                throw new Error("Failed to add/update asset")
-            }
-
             // Then, add the transaction
-            const transactionResponse = await fetch("/api/assets", {
+            const transactionResponse = await fetchWithAuth("/api/assets", {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -102,19 +101,14 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                 }),
             })
 
-            if (!transactionResponse.ok) {
-                const errorData = await transactionResponse.json()
-                throw new Error(errorData.error || "Failed to add transaction")
-            }
-
             onAssetAdded()
             setSymbol("")
             setShares("")
             setTotalAmount("")
             setDate("")
         } catch (error) {
-            console.error("Error adding asset:", error)
-            alert(error.message)
+            console.error("Error adding asset or transaction:", error)
+            // You might want to show an error message to the user here
         }
     }
 
@@ -133,23 +127,13 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
         }
 
         try {
-            const response = await fetch(
+            const data = await fetchWithAuth(
                 `/api/search-symbol?keywords=${encodeURIComponent(value)}`
             )
-            if (response.ok) {
-                const data = await response.json()
-                if (Array.isArray(data) && data.length > 0) {
-                    setSuggestions(data)
-                    setShowSuggestions(true)
-                } else {
-                    setSuggestions([])
-                    setShowSuggestions(false)
-                }
+            if (data.length > 0) {
+                setSuggestions(data)
+                setShowSuggestions(true)
             } else {
-                console.error(
-                    "Error fetching suggestions:",
-                    response.statusText
-                )
                 setSuggestions([])
                 setShowSuggestions(false)
             }
@@ -164,22 +148,19 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
         if (!session?.user?.email) return
 
         try {
-            const response = await fetch(
+            const data = await fetchWithAuth(
                 `/api/portfolios/total-value?userEmail=${encodeURIComponent(
                     session.user.email
                 )}`
             )
-            if (response.ok) {
-                const data = await response.json()
-                const assetData = Object.entries(data.assets)
-                    .filter(([_, asset]) => asset.shares > 0)
-                    .map(([symbol, asset]) => ({
-                        symbol: symbol.replace(/\uFF0E/g, "."), // Unescape dots
-                        name: asset.name || symbol.replace(/\uFF0E/g, "."), // Unescape dots in name if it's the same as symbol
-                        shares: asset.shares,
-                    }))
-                setOwnedAssets(assetData)
-            }
+            const assetData = Object.entries(data.assets)
+                .filter(([_, asset]) => asset.shares > 0)
+                .map(([symbol, asset]) => ({
+                    symbol: symbol.replace(/\uFF0E/g, "."), // Unescape dots
+                    name: asset.name || symbol.replace(/\uFF0E/g, "."), // Unescape dots in name if it's the same as symbol
+                    shares: asset.shares,
+                }))
+            setOwnedAssets(assetData)
         } catch (error) {
             console.error("Error fetching owned assets:", error)
         }
@@ -254,11 +235,11 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                 {assetType === "stock" &&
                                     showSuggestions &&
                                     suggestions.length > 0 && (
-                                        <ul className="absolute z-10 w-full bg-white border border-gray-300 mt-1 max-h-60 overflow-auto">
+                                        <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-auto shadow-lg">
                                             {suggestions.map((suggestion) => (
                                                 <li
                                                     key={suggestion.symbol}
-                                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors duration-150 ease-in-out"
                                                     onMouseDown={(e) => {
                                                         e.preventDefault()
                                                         setSymbol(
@@ -277,8 +258,12 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                                         }
                                                     }}
                                                 >
-                                                    {suggestion.symbol} -{" "}
-                                                    {suggestion.name}
+                                                    <span className="font-medium">
+                                                        {suggestion.symbol}
+                                                    </span>{" "}
+                                                    <span className="text-gray-600">
+                                                        - {suggestion.name}
+                                                    </span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -312,7 +297,10 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                             </div>
                             <div>
                                 <Label htmlFor="date">Date</Label>
-                                <Popover>
+                                <Popover
+                                    open={isCalendarOpen}
+                                    onOpenChange={setIsCalendarOpen}
+                                >
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
@@ -334,7 +322,7 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                                     ? new Date(date)
                                                     : undefined
                                             }
-                                            onSelect={(newDate) =>
+                                            onSelect={(newDate) => {
                                                 setDate(
                                                     newDate
                                                         ? format(
@@ -343,7 +331,8 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                                           )
                                                         : ""
                                                 )
-                                            }
+                                                setIsCalendarOpen(false)
+                                            }}
                                             initialFocus
                                         />
                                     </PopoverContent>
@@ -384,11 +373,11 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                     required
                                 />
                                 {showSuggestions && suggestions.length > 0 && (
-                                    <ul className="absolute z-10 w-full bg-white border border-gray-300 mt-1 max-h-60 overflow-auto">
+                                    <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-auto shadow-lg">
                                         {suggestions.map((suggestion) => (
                                             <li
                                                 key={suggestion.symbol}
-                                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors duration-150 ease-in-out"
                                                 onMouseDown={(e) => {
                                                     e.preventDefault()
                                                     setSymbol(suggestion.symbol)
@@ -399,8 +388,16 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                                     setShowSuggestions(false)
                                                 }}
                                             >
-                                                {suggestion.symbol} (
-                                                {suggestion.shares} owned)
+                                                <span className="font-medium">
+                                                    {suggestion.symbol}
+                                                </span>{" "}
+                                                <span className="text-gray-600">
+                                                    (
+                                                    {formatShares(
+                                                        suggestion.shares
+                                                    )}{" "}
+                                                    owned)
+                                                </span>
                                             </li>
                                         ))}
                                     </ul>
@@ -444,7 +441,10 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                             </div>
                             <div>
                                 <Label htmlFor="date">Date</Label>
-                                <Popover>
+                                <Popover
+                                    open={isCalendarOpen}
+                                    onOpenChange={setIsCalendarOpen}
+                                >
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
@@ -466,7 +466,7 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                                     ? new Date(date)
                                                     : undefined
                                             }
-                                            onSelect={(newDate) =>
+                                            onSelect={(newDate) => {
                                                 setDate(
                                                     newDate
                                                         ? format(
@@ -475,7 +475,8 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                                           )
                                                         : ""
                                                 )
-                                            }
+                                                setIsCalendarOpen(false)
+                                            }}
                                             initialFocus
                                         />
                                     </PopoverContent>

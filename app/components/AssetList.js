@@ -18,6 +18,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { fetchWithAuth } from "@/api-auth"
 
 export default function AssetList({ children }) {
     const [assets, setAssets] = useState([])
@@ -31,30 +32,26 @@ export default function AssetList({ children }) {
 
     const fetchAssetData = async () => {
         try {
-            const response = await fetch(
+            const data = await fetchWithAuth(
                 `/api/portfolios/total-value?userEmail=${encodeURIComponent(
                     session.user.email
                 )}`
             )
-            if (response.ok) {
-                const data = await response.json()
-                const assetData = Object.entries(data.assets)
-                    .filter(([_, asset]) => asset.shares > 0)
-                    .map(([symbol, asset]) => ({
-                        symbol: symbol.replace(/\uFF0E/g, "."),
-                        currentPrice: asset.currentPrice,
-                        invested: asset.shares * asset.paidPerShare,
-                        position: asset.value,
-                        shares: asset.shares,
-                        buyInPrice: asset.paidPerShare,
-                        profitLoss:
-                            asset.value - asset.paidPerShare * asset.shares,
-                        lastPriceDate: asset.lastPriceDate,
-                        assetType: asset.assetType,
-                        annualizedROI: asset.annualizedROI,
-                    }))
-                setAssets(assetData)
-            }
+            const assetData = Object.entries(data.assets)
+                .filter(([_, asset]) => asset.shares > 0)
+                .map(([symbol, asset]) => ({
+                    symbol: symbol.replace(/\uFF0E/g, "."),
+                    currentPrice: asset.currentPrice,
+                    invested: asset.shares * asset.paidPerShare,
+                    position: asset.value,
+                    shares: asset.shares,
+                    buyInPrice: asset.paidPerShare,
+                    profitLoss: asset.value - asset.paidPerShare * asset.shares,
+                    lastPriceDate: asset.lastPriceDate,
+                    assetType: asset.assetType,
+                    annualizedROI: asset.annualizedROI,
+                }))
+            setAssets(assetData)
         } catch (error) {
             console.error("Error fetching asset data:", error)
         }
@@ -133,7 +130,7 @@ export default function AssetList({ children }) {
                                             </div>
                                         </TableCell>
                                         <TableCell
-                                            className={`text-right cursor-pointer ${
+                                            className={`text-right ${
                                                 asset.profitLoss >= 0
                                                     ? "text-green-600"
                                                     : "text-red-600"
@@ -142,7 +139,7 @@ export default function AssetList({ children }) {
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <div>
+                                                        <div className="cursor-pointer">
                                                             <div className="whitespace-nowrap">
                                                                 {formatNumber(
                                                                     asset.profitLoss

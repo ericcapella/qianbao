@@ -16,6 +16,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { formatNumber, formatDate } from "@/lib/utils"
+import { fetchWithAuth } from "@/api-auth"
 
 export default function RealizedPnLDialog({ children }) {
     const [pnlData, setPnlData] = useState([])
@@ -32,17 +33,10 @@ export default function RealizedPnLDialog({ children }) {
             const url = `/api/portfolios/realized-pnl?userEmail=${encodeURIComponent(
                 session.user.email
             )}`
-            const response = await fetch(url)
-            if (response.ok) {
-                const data = await response.json()
-                // Filter out assets without sell transactions
-                const filteredData = data.filter(
-                    (item) => item.totalSharesSold > 0
-                )
-                setPnlData(filteredData)
-            } else {
-                console.error("Error response from API:", await response.text())
-            }
+            const data = await fetchWithAuth(url)
+            // Filter out assets without sell transactions
+            const filteredData = data.filter((item) => item.totalSharesSold > 0)
+            setPnlData(filteredData)
         } catch (error) {
             console.error("Error fetching PnL data:", error)
         }

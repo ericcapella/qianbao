@@ -24,6 +24,7 @@ import DashboardSkeleton from "../components/DashboardSkeleton"
 import Link from "next/link"
 import { RefreshCcw } from "lucide-react"
 import Footer from "../components/Footer"
+import { fetchWithAuth } from "@/api-auth"
 
 export default function Dashboard() {
     const [refreshKey, setRefreshKey] = useState(0)
@@ -50,16 +51,13 @@ export default function Dashboard() {
 
     const fetchPortfolioData = async () => {
         try {
-            const response = await fetch(
+            const data = await fetchWithAuth(
                 `/api/portfolios?userEmail=${encodeURIComponent(
                     session.user.email
                 )}`
             )
-            if (response.ok) {
-                const data = await response.json()
-                setLastRefreshed(data.lastRefreshed)
-                setOldestPriceDate(data.oldestPriceDate)
-            }
+            setLastRefreshed(data.lastRefreshed)
+            setOldestPriceDate(data.oldestPriceDate)
         } catch (error) {
             console.error("Error fetching portfolio data:", error)
         }
@@ -68,19 +66,16 @@ export default function Dashboard() {
     const fetchTransactions = async () => {
         setIsDataLoading(true)
         try {
-            const response = await fetch(
+            const data = await fetchWithAuth(
                 `/api/transactions?userEmail=${encodeURIComponent(
                     session.user.email
                 )}`
             )
-            if (response.ok) {
-                const data = await response.json()
-                const unescapedData = data.map((transaction) => ({
-                    ...transaction,
-                    symbol: transaction.symbol.replace(/\uFF0E/g, "."),
-                }))
-                setTransactions(unescapedData)
-            }
+            const unescapedData = data.map((transaction) => ({
+                ...transaction,
+                symbol: transaction.symbol.replace(/\uFF0E/g, "."),
+            }))
+            setTransactions(unescapedData)
         } catch (error) {
             console.error("Error fetching transactions:", error)
         } finally {
@@ -104,7 +99,7 @@ export default function Dashboard() {
 
     const handleRefreshPortfolio = async () => {
         try {
-            const response = await fetch("/api/portfolios/refresh", {
+            const response = await fetchWithAuth("/api/portfolios/refresh", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -112,16 +107,15 @@ export default function Dashboard() {
                 body: JSON.stringify({ userEmail: session.user.email }),
             })
 
-            if (response.ok) {
-                // Refresh the dashboard data
-                setRefreshKey((prevKey) => prevKey + 1)
-                fetchTransactions()
-                fetchPortfolioData()
-            } else {
-                console.error("Failed to refresh portfolio")
-            }
+            console.log("Portfolio refresh response:", response)
+
+            // Refresh the dashboard data regardless of the response
+            setRefreshKey((prevKey) => prevKey + 1)
+            fetchTransactions()
+            fetchPortfolioData()
         } catch (error) {
             console.error("Error refreshing portfolio:", error)
+            // Optionally, you can show an error message to the user here
         }
     }
 
