@@ -76,11 +76,6 @@ export async function GET(request) {
 }
 
 function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
-    console.log("Entering calculatePortfolioHistory")
-    console.log("Transactions:", JSON.stringify(transactions))
-    console.log("AssetPrices:", JSON.stringify(assetPrices))
-    console.log("TimeRange:", timeRange)
-
     const portfolioHistory = []
     const startDate = getStartDate(transactions, timeRange)
     const endDate = new Date()
@@ -152,7 +147,6 @@ function calculatePortfolioHistory(transactions, assetPrices, timeRange) {
         date <= endDate;
         date.setDate(date.getDate() + 1)
     ) {
-        console.log("Processing date:", date.toISOString().split("T")[0])
         const dailyTransactions = transactions.filter(
             (t) => new Date(t.date).toDateString() === date.toDateString()
         )
@@ -334,14 +328,8 @@ function calculatePortfolioValue(
     lastKnownPrices,
     transactions
 ) {
-    console.log("Entering calculatePortfolioValue")
-    console.log("Portfolio:", JSON.stringify(portfolio))
-    console.log("Date:", date.toISOString().split("T")[0])
-
     return Object.entries(portfolio).reduce((total, [symbol, shares]) => {
-        console.log("Processing symbol:", symbol)
         const asset = assetPrices.find((a) => a.symbol === symbol)
-        console.log("Asset found:", asset ? "Yes" : "No")
 
         if (asset && asset.prices) {
             const price = findClosestPrice(asset.prices, date)
@@ -355,25 +343,18 @@ function calculatePortfolioValue(
                 (t) => t.symbol === symbol && t.operation === "buy"
             )
             if (customAsset) {
-                console.log("Custom asset found:", symbol)
                 return (
                     total +
                     shares * (customAsset.totalPaid / customAsset.shares)
                 )
             }
-            console.log("Asset not found and not a custom asset:", symbol)
             return total
         }
     }, 0)
 }
 
 function findClosestPrice(prices, date) {
-    console.log("Entering findClosestPrice")
-    console.log("Prices:", JSON.stringify(prices))
-    console.log("Date:", date.toISOString().split("T")[0])
-
     if (!prices) {
-        console.log("Prices are null or undefined")
         return 0
     }
 

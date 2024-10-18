@@ -20,10 +20,36 @@ export async function POST(request) {
         }
 
         const now = new Date()
-        const lastRefreshed = new Date(portfolio.lastRefreshed)
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
 
-        if (lastRefreshed > oneDayAgo) {
+        let needsRefresh = false
+
+        // Check portfolio's last refresh date
+        if (new Date(portfolio.lastRefreshed) < oneDayAgo) {
+            needsRefresh = true
+        }
+
+        // Check each asset's last price date
+        if (!needsRefresh) {
+            for (const [symbol, asset] of Object.entries(portfolio.assets)) {
+                const assetDoc = await assetsCollection.findOne({ symbol })
+                if (assetDoc && assetDoc.prices) {
+                    const latestPriceDate = new Date(
+                        Math.max(
+                            ...Object.keys(assetDoc.prices).map(
+                                (date) => new Date(date)
+                            )
+                        )
+                    )
+                    if (latestPriceDate < oneDayAgo) {
+                        needsRefresh = true
+                        break
+                    }
+                }
+            }
+        }
+
+        if (!needsRefresh) {
             return NextResponse.json({ message: "Portfolio is up to date" })
         }
 

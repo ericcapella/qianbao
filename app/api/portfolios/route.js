@@ -16,17 +16,48 @@ export async function GET(request) {
         const client = await clientPromise
         const db = client.db("stocktracker")
         const portfoliosCollection = db.collection("portfolios")
+        const assetsCollection = db.collection("assets")
 
         const portfolio = await portfoliosCollection.findOne({ userEmail })
 
-        return NextResponse.json(
-            portfolio
-                ? {
-                      assets: portfolio.assets,
-                      lastRefreshed: portfolio.lastRefreshed,
-                  }
-                : { assets: [], lastRefreshed: null }
-        )
+        if (!portfolio) {
+            return NextResponse.json({
+                assets: [],
+                lastRefreshed: null,
+                oldestPriceDate: null,
+            })
+        }
+
+        const assetSymbols = Object.keys(portfolio.assets)
+        const assets = await assetsCollection
+            .find({ symbol: { $in: assetSymbols } })
+            .toArray()
+
+        const oldestPriceDate = assets.reduce((oldest, asset) => {
+            if (asset.prices) {
+                const assetOldest = new Date(
+                    Math.min(
+                        ...Object.keys(asset.prices).map(
+                            (date) => new Date(date)
+                        )
+                    )
+                )
+                return oldest
+                    ? assetOldest < oldest
+                        ? assetOldest
+                        : oldest
+                    : assetOldest
+            }
+            return oldest
+        }, null)
+
+        return NextResponse.json({
+            assets: portfolio.assets,
+            lastRefreshed: portfolio.lastRefreshed,
+            oldestPriceDate: oldestPriceDate
+                ? oldestPriceDate.toISOString()
+                : null,
+        })
     } catch (error) {
         console.error("Error fetching portfolio:", error)
         return NextResponse.json(

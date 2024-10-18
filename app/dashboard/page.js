@@ -33,6 +33,7 @@ export default function Dashboard() {
     const [isAssetFormOpen, setIsAssetFormOpen] = useState(false)
     const [isDataLoading, setIsDataLoading] = useState(true)
     const [lastRefreshed, setLastRefreshed] = useState(null)
+    const [oldestPriceDate, setOldestPriceDate] = useState(null)
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -57,6 +58,7 @@ export default function Dashboard() {
             if (response.ok) {
                 const data = await response.json()
                 setLastRefreshed(data.lastRefreshed)
+                setOldestPriceDate(data.oldestPriceDate)
             }
         } catch (error) {
             console.error("Error fetching portfolio data:", error)
@@ -123,20 +125,28 @@ export default function Dashboard() {
         }
     }
 
-    const formatLastRefreshed = (date) => {
-        if (!date) return "Never"
+    const formatLastRefreshed = (lastRefreshed, oldestPriceDate) => {
+        if (!lastRefreshed || !oldestPriceDate) return "Never"
         const now = new Date()
-        const refreshDate = new Date(date)
-        const diffDays = Math.floor((now - refreshDate) / (1000 * 60 * 60 * 24))
+        const refreshDate = new Date(lastRefreshed)
+        const mostRecentDate = new Date(
+            Math.max(new Date(lastRefreshed), new Date(oldestPriceDate))
+        )
 
-        if (diffDays > 30) {
-            return `Last refreshed ${refreshDate.toLocaleDateString("en-GB")}`
-        } else if (diffDays === 0) {
+        const diffDays = Math.floor(
+            (now - mostRecentDate) / (1000 * 60 * 60 * 24)
+        )
+
+        if (diffDays === 0) {
             return "Last refreshed today"
         } else if (diffDays === 1) {
             return "Last refreshed yesterday"
-        } else {
+        } else if (diffDays <= 30) {
             return `Last refreshed ${diffDays} days ago`
+        } else {
+            return `Last refreshed on ${mostRecentDate.toLocaleDateString(
+                "en-GB"
+            )}`
         }
     }
 
@@ -212,7 +222,10 @@ export default function Dashboard() {
                             <div className="flex items-center justify-end space-x-4">
                                 <div className="flex items-center">
                                     <span className="text-sm text-muted-foreground mr-2">
-                                        {formatLastRefreshed(lastRefreshed)}
+                                        {formatLastRefreshed(
+                                            lastRefreshed,
+                                            oldestPriceDate
+                                        )}
                                     </span>
                                     <Button
                                         variant="ghost"

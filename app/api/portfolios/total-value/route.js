@@ -1,6 +1,45 @@
 import { NextResponse } from "next/server"
 import clientPromise from "@/lib/mongodb"
 
+function calculateAnnualizedROI(transactions, currentValue, currentShares) {
+    let totalInvested = 0
+    let totalShares = 0
+    const now = new Date()
+
+    transactions.forEach((transaction) => {
+        if (transaction.operation === "buy") {
+            const daysHeld =
+                (now - new Date(transaction.date)) / (1000 * 60 * 60 * 24)
+            totalInvested += transaction.totalPaid
+            totalShares += transaction.shares
+        }
+    })
+
+    if (totalInvested === 0 || currentShares === 0) {
+        return 0
+    }
+
+    // Calculate the average cost per share
+    const averageCostPerShare = totalInvested / totalShares
+
+    // Calculate the invested amount for current shares
+    const investedForCurrentShares = averageCostPerShare * currentShares
+
+    const profitLoss = currentValue - investedForCurrentShares
+
+    const totalReturn = profitLoss / investedForCurrentShares
+
+    // Use the date of the first buy transaction for calculation
+    const firstBuyDate = new Date(
+        transactions.find((t) => t.operation === "buy").date
+    )
+    const daysHeld = (now - firstBuyDate) / (1000 * 60 * 60 * 24)
+
+    const annualizedROI = (Math.pow(1 + totalReturn, 365 / daysHeld) - 1) * 100
+
+    return annualizedROI
+}
+
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url)
@@ -17,6 +56,7 @@ export async function GET(request) {
         const db = client.db("stocktracker")
         const portfoliosCollection = db.collection("portfolios")
         const assetsCollection = db.collection("assets")
+        const transactionsCollection = db.collection("transactions")
 
         const portfolio = await portfoliosCollection.findOne({ userEmail })
 
@@ -33,6 +73,10 @@ export async function GET(request) {
 
         for (const [symbol, asset] of Object.entries(portfolio.assets)) {
             const assetData = await assetsCollection.findOne({ symbol })
+            const transactions = await transactionsCollection
+                .find({ userEmail, symbol })
+                .toArray()
+
             if (assetData && assetData.prices) {
                 const pricesArray = Object.entries(assetData.prices).sort(
                     (a, b) => new Date(b[0]) - new Date(a[0])
@@ -41,6 +85,13 @@ export async function GET(request) {
                 const lastPriceDate = pricesArray[0][0]
                 const assetValue = asset.shares * latestPrice
                 totalValue += assetValue
+
+                const annualizedROI = calculateAnnualizedROI(
+                    transactions,
+                    assetValue,
+                    asset.shares
+                )
+
                 assets[symbol] = {
                     shares: asset.shares,
                     value: assetValue,
@@ -48,6 +99,7 @@ export async function GET(request) {
                     currentPrice: latestPrice,
                     assetType: assetData.assetType,
                     lastPriceDate: lastPriceDate,
+                    annualizedROI: annualizedROI,
                 }
 
                 // Calculate value 30 days ago

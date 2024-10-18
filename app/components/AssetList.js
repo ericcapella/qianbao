@@ -51,6 +51,7 @@ export default function AssetList({ children }) {
                             asset.value - asset.paidPerShare * asset.shares,
                         lastPriceDate: asset.lastPriceDate,
                         assetType: asset.assetType,
+                        annualizedROI: asset.annualizedROI,
                     }))
                 setAssets(assetData)
             }
@@ -132,24 +133,43 @@ export default function AssetList({ children }) {
                                             </div>
                                         </TableCell>
                                         <TableCell
-                                            className={`text-right ${
+                                            className={`text-right cursor-pointer ${
                                                 asset.profitLoss >= 0
                                                     ? "text-green-600"
                                                     : "text-red-600"
                                             }`}
                                         >
-                                            <div className="whitespace-nowrap">
-                                                {formatNumber(asset.profitLoss)}
-                                                &nbsp;€
-                                            </div>
-                                            <div className="text-sm whitespace-nowrap">
-                                                {(
-                                                    (asset.profitLoss /
-                                                        asset.invested) *
-                                                    100
-                                                ).toFixed(2)}
-                                                %
-                                            </div>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div>
+                                                            <div className="whitespace-nowrap">
+                                                                {formatNumber(
+                                                                    asset.profitLoss
+                                                                )}
+                                                                &nbsp;€
+                                                            </div>
+                                                            <div className="text-sm whitespace-nowrap">
+                                                                {(
+                                                                    (asset.profitLoss /
+                                                                        asset.invested) *
+                                                                    100
+                                                                ).toFixed(2)}
+                                                                %
+                                                            </div>
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>
+                                                            Annualized ROI:{" "}
+                                                            {formatNumber(
+                                                                asset.annualizedROI
+                                                            )}
+                                                            %
+                                                        </p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         </TableCell>
                                     </TableRow>
                                 ))}

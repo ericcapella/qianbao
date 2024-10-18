@@ -38,7 +38,7 @@ export default function Home() {
                     <Button variant="outline">View Demo</Button>
                 </div>
                 <div className="flex flex-col md:flex-row justify-center items-center md:items-center space-y-4 md:space-y-0 md:space-x-8">
-                    <div className="flex items-center justify-center w-full md:justify-start">
+                    <div className="flex items-center justify-center w-full md:w-auto">
                         <svg
                             className="w-5 h-5 mr-2"
                             fill="none"
@@ -55,7 +55,7 @@ export default function Home() {
                         </svg>
                         <span>Securely encrypted</span>
                     </div>
-                    <div className="flex items-center justify-center w-full md:justify-start">
+                    <div className="flex items-center justify-center w-full md:w-auto">
                         <svg
                             className="w-5 h-5 mr-2"
                             fill="none"
@@ -72,7 +72,7 @@ export default function Home() {
                         </svg>
                         <span>Stocks, ETFs, Crypto and more</span>
                     </div>
-                    <div className="flex items-center justify-center w-full md:justify-start">
+                    <div className="flex items-center justify-center w-full md:w-auto">
                         <svg
                             className="w-5 h-5 mr-2"
                             fill="none"
@@ -207,9 +207,7 @@ export default function Home() {
                 </div>
                 <div className="w-full max-w-4xl py-12 rounded-lg text-center flex">
                     <div className="w-1/4 bg-muted rounded-lg flex items-center justify-center">
-                        <span className="text-6xl font-bold text-gray-700">
-                            钱包
-                        </span>
+                        <span className="text-6xl font-bold">钱包</span>
                     </div>
                     <div className="w-3/4 pl-8 text-left">
                         <h3 className="text-2xl font-bold mb-4">
@@ -259,22 +257,66 @@ export default function Home() {
                         </Link>
                     </Button>
                 </div>
-                <div className="w-full max-w-4xl mt-12 p-12 bg-muted rounded-lg text-center">
-                    <h3 className="text-3xl font-bold mb-4">
-                        Start tracking your investments
-                    </h3>
-                    <p className="text-base text-muted-foreground mb-8">
-                        Gain clear insights into your investments, track your
-                        portfolio's performance in real-time, and empower
-                        yourself to make smarter financial decisions.
-                    </p>
-                    <div className="flex justify-center space-x-4">
-                        <Button asChild>
-                            <Link href="/register">
-                                Start Tracking Portfolio
-                            </Link>
-                        </Button>
-                        <Button variant="outline">View Demo</Button>
+                <div className="w-full max-w-4xl mt-12 p-12 bg-muted rounded-lg text-center relative overflow-hidden">
+                    <div className="absolute inset-0 opacity-30">
+                        <svg
+                            className="w-full h-full"
+                            viewBox="0 0 100 100"
+                            preserveAspectRatio="none"
+                        >
+                            <defs>
+                                <linearGradient
+                                    id="gradient"
+                                    x1="0%"
+                                    y1="100%"
+                                    x2="100%"
+                                    y2="0%"
+                                >
+                                    <stop
+                                        offset="0%"
+                                        stopColor="#22c55e"
+                                        stopOpacity="0.5"
+                                    />
+                                    <stop
+                                        offset="100%"
+                                        stopColor="#22c55e"
+                                        stopOpacity="0.5"
+                                    />
+                                </linearGradient>
+                            </defs>
+                            <path
+                                d="M0,80 C10,75 20,85 30,70 S40,60 50,65 S60,50 70,55 C75,57 80,59 85,62 C90,65 94,62 96,58 C98,54 99,45 100,40 L100,100 L0,100 Z"
+                                fill="url(#gradient)"
+                            />
+                            <path
+                                d="M0,80 C10,75 20,85 30,70 S40,60 50,65 S60,50 70,55 C75,57 80,59 85,62 C90,65 94,62 96,58 C98,54 99,45 100,40"
+                                fill="none"
+                                stroke="#22c55e"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                vectorEffect="non-scaling-stroke"
+                            />
+                        </svg>
+                    </div>
+                    <div className="relative z-10">
+                        <h3 className="text-3xl font-bold mb-4">
+                            Start tracking your investments
+                        </h3>
+                        <p className="text-base text-muted-foreground mb-8">
+                            Gain clear insights into your investments, track
+                            your portfolio's performance in real-time, and
+                            empower yourself to make smarter financial
+                            decisions.
+                        </p>
+                        <div className="flex justify-center space-x-4">
+                            <Button asChild>
+                                <Link href="/register">
+                                    Start Tracking Portfolio
+                                </Link>
+                            </Button>
+                            <Button variant="outline">View Demo</Button>
+                        </div>
                     </div>
                 </div>
             </main>

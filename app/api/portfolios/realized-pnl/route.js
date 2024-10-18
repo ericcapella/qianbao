@@ -2,14 +2,8 @@ import { NextResponse } from "next/server"
 import clientPromise from "@/lib/mongodb"
 
 export async function GET(request) {
-    console.log("API route called: /api/portfolios/realized-pnl")
     const { searchParams } = new URL(request.url)
     const userEmail = searchParams.get("userEmail")
-
-    console.log(
-        "Received request for realized PnL data. User email:",
-        userEmail
-    )
 
     if (!userEmail) {
         console.error("User email is missing in the request")
@@ -20,7 +14,6 @@ export async function GET(request) {
     }
 
     try {
-        console.log("Connecting to database...")
         const client = await clientPromise
         const db = client.db("stocktracker")
         const transactionsCollection = db.collection("transactions")
@@ -136,14 +129,9 @@ export async function GET(request) {
             },
         ]
 
-        console.log("Executing aggregation pipeline...")
-        console.log("Pipeline:", JSON.stringify(pipeline, null, 2))
-
         const result = await transactionsCollection
             .aggregate(pipeline)
             .toArray()
-
-        console.log("Aggregation result:", JSON.stringify(result, null, 2))
 
         return NextResponse.json(result)
     } catch (error) {
