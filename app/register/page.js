@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -13,6 +13,11 @@ export default function Register() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const router = useRouter()
+    const nameInputRef = useRef(null)
+
+    useEffect(() => {
+        nameInputRef.current?.focus()
+    }, [])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -23,7 +28,7 @@ export default function Register() {
         })
 
         if (response.ok) {
-            router.push("/login")
+            router.push(`/login?email=${encodeURIComponent(email)}`)
         } else {
             const data = await response.json()
             alert(data.error || "Registration failed")
@@ -59,6 +64,7 @@ export default function Register() {
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Warren Buffett"
                                 required
+                                ref={nameInputRef}
                             />
                         </div>
                         <div className="grid gap-2">

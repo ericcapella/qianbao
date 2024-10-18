@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -19,6 +19,19 @@ export default function Login() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const router = useRouter()
+    const emailInputRef = useRef(null)
+    const passwordInputRef = useRef(null)
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search)
+        const emailParam = params.get("email")
+        if (emailParam) {
+            setEmail(emailParam)
+            passwordInputRef.current?.focus()
+        } else {
+            emailInputRef.current?.focus()
+        }
+    }, [])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -71,6 +84,7 @@ export default function Login() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="email@example.com"
                                 required
+                                ref={emailInputRef}
                             />
                         </div>
                         <div className="grid gap-2">
@@ -89,6 +103,7 @@ export default function Login() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
+                                ref={passwordInputRef}
                             />
                         </div>
                         <Button type="submit" className="w-full">
