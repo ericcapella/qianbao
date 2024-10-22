@@ -11,37 +11,38 @@ import { useSession } from "next-auth/react"
 import { formatNumber } from "@/lib/utils"
 import { fetchWithAuth } from "@/api-auth"
 
-export default function AssetPieChart() {
-    const [chartData, setChartData] = useState([])
+export default function AssetPieChart({ userEmail }) {
+    const [data, setData] = useState([])
     const { data: session, status } = useSession()
 
     useEffect(() => {
-        if (status === "authenticated" && session?.user?.email) {
-            fetchAssetData()
+        if (userEmail || (status === "authenticated" && session?.user?.email)) {
+            fetchData()
         }
-    }, [status, session?.user?.email])
+    }, [status, session?.user?.email, userEmail])
 
-    const fetchAssetData = async () => {
+    const fetchData = async () => {
         try {
-            const data = await fetchWithAuth(
+            const email = userEmail || session.user.email
+            const response = await fetchWithAuth(
                 `/api/portfolios/total-value?userEmail=${encodeURIComponent(
-                    session.user.email
+                    email
                 )}`
             )
-            const totalValue = Object.values(data.assets).reduce(
+            const totalValue = Object.values(response.assets).reduce(
                 (sum, asset) => sum + asset.value,
                 0
             )
-            const assetData = Object.entries(data.assets).map(
+            const assetData = Object.entries(response.assets).map(
                 ([symbol, asset]) => ({
                     symbol: symbol.replace(/\uFF0E/g, "."), // Unescape dots
                     value: asset.value,
                     percentage: (asset.value / totalValue) * 100,
                 })
             )
-            setChartData(assetData)
+            setData(assetData)
         } catch (error) {
-            console.error("Error fetching asset data:", error)
+            console.error("Error fetching data:", error)
         }
     }
 
@@ -58,7 +59,7 @@ export default function AssetPieChart() {
         value: {
             label: "Value",
         },
-        ...chartData.reduce((acc, curr, index) => {
+        ...data.reduce((acc, curr, index) => {
             acc[curr.symbol] = {
                 label: curr.symbol,
                 color: colors[index % colors.length],
@@ -89,7 +90,7 @@ export default function AssetPieChart() {
                 <PieChart>
                     <ChartTooltip content={<CustomTooltip />} />
                     <Pie
-                        data={chartData}
+                        data={data}
                         dataKey="value"
                         nameKey="symbol"
                         cx="50%"
@@ -105,7 +106,7 @@ export default function AssetPieChart() {
                         animationDuration={200}
                         animationEasing="linear"
                     >
-                        {chartData.map((entry, index) => (
+                        {data.map((entry, index) => (
                             <Cell
                                 key={`cell-${index}`}
                                 fill={colors[index % colors.length]}

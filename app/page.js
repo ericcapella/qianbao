@@ -35,7 +35,9 @@ export default function Home() {
                     <Button asChild>
                         <Link href="/register">Start Tracking Portfolio</Link>
                     </Button>
-                    <Button variant="outline">View Demo</Button>
+                    <Button variant="outline" asChild>
+                        <Link href="/demo">View Demo</Link>
+                    </Button>
                 </div>
                 <div className="flex flex-col md:flex-row justify-center items-center md:items-center space-y-4 md:space-y-0 md:space-x-8">
                     <div className="flex items-center justify-center w-full md:w-auto">
@@ -315,7 +317,9 @@ export default function Home() {
                                     Start Tracking Portfolio
                                 </Link>
                             </Button>
-                            <Button variant="outline">View Demo</Button>
+                            <Button variant="outline" asChild>
+                                <Link href="/demo">View Demo</Link>
+                            </Button>
                         </div>
                     </div>
                 </div>

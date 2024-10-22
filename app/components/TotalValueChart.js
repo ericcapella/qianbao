@@ -137,7 +137,7 @@ const CustomTooltip = ({
     )
 }
 
-export default function TotalValueChart() {
+export default function TotalValueChart({ userEmail }) {
     const [chartData, setChartData] = useState([])
     const [timeRange, setTimeRange] = useState("1Y")
     const [totalValue, setTotalValue] = useState(0)
@@ -145,23 +145,24 @@ export default function TotalValueChart() {
     const [startValue, setStartValue] = useState(0)
     const [totalInvestedInPeriod, setTotalInvestedInPeriod] = useState(0)
     const [totalPnLInPeriod, setTotalPnLInPeriod] = useState(0)
-    const [transactions, setTransactions] = useState([]) // New state for transactions
+    const [transactions, setTransactions] = useState([])
     const [hoveredDot, setHoveredDot] = useState(null)
     const [portfolioDistribution, setPortfolioDistribution] = useState({})
     const [combinedProgression, setCombinedProgression] = useState(0)
     const { data: session, status } = useSession()
 
     useEffect(() => {
-        if (status === "authenticated" && session?.user?.email) {
+        if (userEmail || (status === "authenticated" && session?.user?.email)) {
             fetchChartData()
         }
-    }, [status, session?.user?.email, timeRange])
+    }, [status, session?.user?.email, timeRange, userEmail])
 
     const fetchChartData = async () => {
         try {
+            const email = userEmail || session?.user?.email
             const data = await fetchWithAuth(
                 `/api/portfolios/value-history?userEmail=${encodeURIComponent(
-                    session.user.email
+                    email
                 )}&timeRange=${timeRange}&includeTransactions=true`
             )
             console.log("Received data from API:", data)

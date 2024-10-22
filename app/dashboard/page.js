@@ -227,9 +227,18 @@ export default function Dashboard() {
                                 </div>
                             </div>
                         </div>
-                        <TotalValueChart key={`valuechart-${refreshKey}`} />
-                        <AssetList key={`assetlist-${refreshKey}`}>
-                            <AssetPieChart key={`piechart-${refreshKey}`} />
+                        <TotalValueChart
+                            key={`valuechart-${refreshKey}`}
+                            userEmail={session.user.email}
+                        />
+                        <AssetList
+                            key={`assetlist-${refreshKey}`}
+                            userEmail={session.user.email}
+                        >
+                            <AssetPieChart
+                                key={`piechart-${refreshKey}`}
+                                userEmail={session.user.email}
+                            />
                         </AssetList>
                         <TransactionsList
                             key={`transactionlist-${refreshKey}`}

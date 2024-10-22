@@ -20,21 +20,23 @@ import {
 } from "@/components/ui/tooltip"
 import { fetchWithAuth } from "@/api-auth"
 
-export default function AssetList({ children }) {
+export default function AssetList({ children, userEmail }) {
     const [assets, setAssets] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
     const { data: session, status } = useSession()
 
     useEffect(() => {
-        if (status === "authenticated" && session?.user?.email) {
-            fetchAssetData()
+        if (userEmail || (status === "authenticated" && session?.user?.email)) {
+            fetchAssets()
         }
-    }, [status, session?.user?.email])
+    }, [status, session?.user?.email, userEmail])
 
-    const fetchAssetData = async () => {
+    const fetchAssets = async () => {
         try {
+            const email = userEmail || session.user.email
             const data = await fetchWithAuth(
                 `/api/portfolios/total-value?userEmail=${encodeURIComponent(
-                    session.user.email
+                    email
                 )}`
             )
             const assetData = Object.entries(data.assets)
