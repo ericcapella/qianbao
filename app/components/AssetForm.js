@@ -59,14 +59,14 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
     }, [showSuggestions])
 
     useEffect(() => {
-        if (status === "authenticated" && session?.user?.email) {
+        if (status === "authenticated" && session?.user?.id) {
             fetchOwnedAssets()
         }
-    }, [status, session?.user?.email])
+    }, [status, session?.user?.id])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (!session?.user?.email) {
+        if (!session?.user?.id) {
             console.error("User not authenticated")
             return
         }
@@ -94,8 +94,8 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                     symbol: symbol.replace(/\./g, "\uFF0E"),
                     date,
                     shares: parseFloat(shares),
-                    totalAmount: parseFloat(totalAmount),
-                    userEmail: session.user.email,
+                    totalPaid: parseFloat(totalAmount),
+                    userId: session.user.id,
                     operation,
                     assetType,
                 }),
@@ -145,12 +145,12 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
     }
 
     const fetchOwnedAssets = async () => {
-        if (!session?.user?.email) return
+        if (!session?.user?.id) return
 
         try {
             const data = await fetchWithAuth(
-                `/api/portfolios/total-value?userEmail=${encodeURIComponent(
-                    session.user.email
+                `/api/portfolios/total-value?userId=${encodeURIComponent(
+                    session.user.id
                 )}`
             )
             const assetData = Object.entries(data.assets)
@@ -270,32 +270,6 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                     )}
                             </div>
                             <div>
-                                <Label htmlFor="shares">Number of Shares</Label>
-                                <Input
-                                    id="shares"
-                                    type="number"
-                                    value={shares}
-                                    onChange={handleSharesChange}
-                                    placeholder="0.00"
-                                    required
-                                    min="0"
-                                    step="any"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="totalAmount">Total Paid</Label>
-                                <Input
-                                    id="totalAmount"
-                                    type="number"
-                                    value={totalAmount}
-                                    onChange={(e) =>
-                                        setTotalAmount(e.target.value)
-                                    }
-                                    placeholder="0.00"
-                                    required
-                                />
-                            </div>
-                            <div>
                                 <Label htmlFor="date">Date</Label>
                                 <Popover
                                     open={isCalendarOpen}
@@ -337,6 +311,32 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                         />
                                     </PopoverContent>
                                 </Popover>
+                            </div>
+                            <div>
+                                <Label htmlFor="shares">Number of Shares</Label>
+                                <Input
+                                    id="shares"
+                                    type="number"
+                                    value={shares}
+                                    onChange={handleSharesChange}
+                                    placeholder="0.00"
+                                    required
+                                    min="0"
+                                    step="any"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="totalAmount">Total Paid</Label>
+                                <Input
+                                    id="totalAmount"
+                                    type="number"
+                                    value={totalAmount}
+                                    onChange={(e) =>
+                                        setTotalAmount(e.target.value)
+                                    }
+                                    placeholder="0.00"
+                                    required
+                                />
                             </div>
                             <Button type="submit">Add Transaction</Button>
                         </form>
@@ -404,42 +404,6 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                 )}
                             </div>
                             <div>
-                                <Label htmlFor="shares-sell">
-                                    Number of Shares
-                                </Label>
-                                <Input
-                                    id="shares-sell"
-                                    type="number"
-                                    value={shares}
-                                    onChange={handleSharesChange}
-                                    placeholder="0.00"
-                                    required
-                                    min="0"
-                                    max={maxShares}
-                                    step="any"
-                                />
-                                {parseFloat(shares) > maxShares && (
-                                    <p className="text-sm text-red-500 mt-1">
-                                        You only own {maxShares} shares
-                                    </p>
-                                )}
-                            </div>
-                            <div>
-                                <Label htmlFor="totalAmount">
-                                    Total Received
-                                </Label>
-                                <Input
-                                    id="totalAmount"
-                                    type="number"
-                                    value={totalAmount}
-                                    onChange={(e) =>
-                                        setTotalAmount(e.target.value)
-                                    }
-                                    placeholder="0.00"
-                                    required
-                                />
-                            </div>
-                            <div>
                                 <Label htmlFor="date">Date</Label>
                                 <Popover
                                     open={isCalendarOpen}
@@ -481,6 +445,42 @@ export default function AssetForm({ onAssetAdded, open, onOpenChange }) {
                                         />
                                     </PopoverContent>
                                 </Popover>
+                            </div>
+                            <div>
+                                <Label htmlFor="shares-sell">
+                                    Number of Shares
+                                </Label>
+                                <Input
+                                    id="shares-sell"
+                                    type="number"
+                                    value={shares}
+                                    onChange={handleSharesChange}
+                                    placeholder="0.00"
+                                    required
+                                    min="0"
+                                    max={maxShares}
+                                    step="any"
+                                />
+                                {parseFloat(shares) > maxShares && (
+                                    <p className="text-sm text-red-500 mt-1">
+                                        You only own {maxShares} shares
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <Label htmlFor="totalAmount">
+                                    Total Received
+                                </Label>
+                                <Input
+                                    id="totalAmount"
+                                    type="number"
+                                    value={totalAmount}
+                                    onChange={(e) =>
+                                        setTotalAmount(e.target.value)
+                                    }
+                                    placeholder="0.00"
+                                    required
+                                />
                             </div>
                             <Button type="submit">Add Transaction</Button>
                         </form>

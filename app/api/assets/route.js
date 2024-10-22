@@ -177,39 +177,58 @@ export async function PUT(request) {
             symbol,
             date,
             shares,
-            totalAmount,
-            userEmail,
+            totalPaid,
+            userId,
             operation,
             assetType,
         } = await request.json()
-        const client = await clientPromise
-        const db = client.db("stocktracker")
-        const transactionsCollection = db.collection("transactions")
-        const portfoliosCollection = db.collection("portfolios")
-        const assetsCollection = db.collection("assets")
+        console.log("Received data:", {
+            symbol,
+            date,
+            shares,
+            totalPaid,
+            userId,
+            operation,
+            assetType,
+        })
 
         if (
             !symbol ||
             !date ||
             !shares ||
-            !totalAmount ||
-            !userEmail ||
+            !totalPaid ||
+            !userId ||
             !operation ||
             !assetType
         ) {
+            console.log("Missing fields:", {
+                symbol,
+                date,
+                shares,
+                totalPaid,
+                userId,
+                operation,
+                assetType,
+            })
             return NextResponse.json(
                 { error: "All fields are required" },
                 { status: 400 }
             )
         }
 
+        const client = await clientPromise
+        const db = client.db("stocktracker")
+        const transactionsCollection = db.collection("transactions")
+        const portfoliosCollection = db.collection("portfolios")
+        const assetsCollection = db.collection("assets")
+
         if (operation === "buy") {
             return handleBuyTransaction(
                 symbol,
                 date,
                 shares,
-                totalAmount,
-                userEmail,
+                totalPaid,
+                userId,
                 transactionsCollection,
                 portfoliosCollection,
                 assetType
@@ -219,8 +238,8 @@ export async function PUT(request) {
                 symbol,
                 date,
                 shares,
-                totalAmount,
-                userEmail,
+                totalPaid,
+                userId,
                 transactionsCollection,
                 portfoliosCollection,
                 assetsCollection,
@@ -246,7 +265,7 @@ async function handleBuyTransaction(
     date,
     shares,
     totalPaid,
-    userEmail,
+    userId,
     transactionsCollection,
     portfoliosCollection,
     assetType
@@ -258,13 +277,13 @@ async function handleBuyTransaction(
         date,
         shares: parseFloat(shares),
         totalPaid: parseFloat(totalPaid),
-        userEmail,
+        userId,
         operation: "buy",
     }
 
     await transactionsCollection.insertOne(newTransaction)
 
-    const portfolio = await portfoliosCollection.findOne({ userEmail })
+    const portfolio = await portfoliosCollection.findOne({ userId })
     let updatedAsset = {
         shares: parseFloat(shares),
         totalPaid: parseFloat(totalPaid),
@@ -283,13 +302,13 @@ async function handleBuyTransaction(
     }
 
     await portfoliosCollection.updateOne(
-        { userEmail },
+        { userId },
         {
             $set: {
                 [`assets.${escapedSymbol}`]: updatedAsset,
                 lastRefreshed: new Date(),
             },
-            $setOnInsert: { userEmail },
+            $setOnInsert: { userId },
         },
         { upsert: true }
     )
@@ -305,7 +324,7 @@ async function handleSellTransaction(
     date,
     shares,
     totalReceived,
-    userEmail,
+    userId,
     transactionsCollection,
     portfoliosCollection,
     assetsCollection,
@@ -316,13 +335,13 @@ async function handleSellTransaction(
     console.log("Date:", date)
     console.log("Shares:", shares)
     console.log("Total Received:", totalReceived)
-    console.log("User Email:", userEmail)
+    console.log("User id:", userId)
     console.log("Asset Type:", assetType)
 
     const escapedSymbol = symbol.replace(/\./g, "．")
     console.log("Escaped Symbol:", escapedSymbol)
 
-    const portfolio = await portfoliosCollection.findOne({ userEmail })
+    const portfolio = await portfoliosCollection.findOne({ userId })
     console.log("Portfolio:", JSON.stringify(portfolio))
 
     if (!portfolio || !portfolio.assets[escapedSymbol]) {
@@ -355,7 +374,7 @@ async function handleSellTransaction(
     } else {
         console.log("Processing non-custom asset sell")
         const buyTransactions = await transactionsCollection
-            .find({ userEmail, symbol: escapedSymbol, operation: "buy" })
+            .find({ userId, symbol: escapedSymbol, operation: "buy" })
             .sort({ date: 1 })
             .toArray()
         console.log("Buy Transactions:", JSON.stringify(buyTransactions))
@@ -388,7 +407,7 @@ async function handleSellTransaction(
         date,
         shares: parseFloat(shares),
         totalReceived: parseFloat(totalReceived),
-        userEmail,
+        userId,
         operation: "sell",
         pnl,
     }
@@ -402,7 +421,7 @@ async function handleSellTransaction(
     if (updatedShares === 0) {
         console.log("Removing asset from portfolio")
         await portfoliosCollection.updateOne(
-            { userEmail },
+            { userId },
             {
                 $unset: { [`assets.${escapedSymbol}`]: "" },
                 $set: { lastRefreshed: new Date() },
@@ -419,7 +438,7 @@ async function handleSellTransaction(
         console.log("Updated Asset:", JSON.stringify(updatedAsset))
 
         await portfoliosCollection.updateOne(
-            { userEmail },
+            { userId },
             {
                 $set: {
                     [`assets.${escapedSymbol}`]: updatedAsset,

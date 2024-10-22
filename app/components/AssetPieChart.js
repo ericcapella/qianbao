@@ -11,22 +11,20 @@ import { useSession } from "next-auth/react"
 import { formatNumber } from "@/lib/utils"
 import { fetchWithAuth } from "@/api-auth"
 
-export default function AssetPieChart({ userEmail }) {
+export default function AssetPieChart({ userId }) {
     const [data, setData] = useState([])
-    const { data: session, status } = useSession()
 
     useEffect(() => {
-        if (userEmail || (status === "authenticated" && session?.user?.email)) {
+        if (userId) {
             fetchData()
         }
-    }, [status, session?.user?.email, userEmail])
+    }, [userId])
 
     const fetchData = async () => {
         try {
-            const email = userEmail || session.user.email
             const response = await fetchWithAuth(
-                `/api/portfolios/total-value?userEmail=${encodeURIComponent(
-                    email
+                `/api/portfolios/total-value?userId=${encodeURIComponent(
+                    userId
                 )}`
             )
             const totalValue = Object.values(response.assets).reduce(

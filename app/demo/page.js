@@ -20,7 +20,8 @@ export default function DemoPortfolio() {
     const [lastRefreshed, setLastRefreshed] = useState(null)
     const [oldestPriceDate, setOldestPriceDate] = useState(null)
 
-    const demoEmail = "demo@qianbao.finance"
+    const demoUserId = "9a1af2c9-a135-42d9-9c98-11753fd2171d"
+    // Replace with an actual UUID for the demo user
 
     useEffect(() => {
         fetchTransactions()
@@ -30,7 +31,7 @@ export default function DemoPortfolio() {
     const fetchPortfolioData = async () => {
         try {
             const data = await fetchWithAuth(
-                `/api/portfolios?userEmail=${encodeURIComponent(demoEmail)}`
+                `/api/portfolios?userId=${encodeURIComponent(demoUserId)}`
             )
             setLastRefreshed(data.lastRefreshed)
             setOldestPriceDate(data.oldestPriceDate)
@@ -43,7 +44,7 @@ export default function DemoPortfolio() {
         setIsDataLoading(true)
         try {
             const data = await fetchWithAuth(
-                `/api/transactions?userEmail=${encodeURIComponent(demoEmail)}`
+                `/api/transactions?userId=${encodeURIComponent(demoUserId)}`
             )
             const unescapedData = data.map((transaction) => ({
                 ...transaction,
@@ -64,7 +65,7 @@ export default function DemoPortfolio() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ userEmail: demoEmail }),
+                body: JSON.stringify({ userId: demoUserId }),
             })
 
             setRefreshKey((prevKey) => prevKey + 1)
@@ -150,15 +151,12 @@ export default function DemoPortfolio() {
                 </div>
                 <TotalValueChart
                     key={`valuechart-${refreshKey}`}
-                    userEmail={demoEmail}
+                    userId={demoUserId}
                 />
-                <AssetList
-                    key={`assetlist-${refreshKey}`}
-                    userEmail={demoEmail}
-                >
+                <AssetList key={`assetlist-${refreshKey}`} userId={demoUserId}>
                     <AssetPieChart
                         key={`piechart-${refreshKey}`}
-                        userEmail={demoEmail}
+                        userId={demoUserId}
                     />
                 </AssetList>
                 <TransactionsList

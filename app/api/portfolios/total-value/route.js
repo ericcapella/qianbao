@@ -43,11 +43,11 @@ function calculateAnnualizedROI(transactions, currentValue, currentShares) {
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url)
-        const userEmail = searchParams.get("userEmail")
+        const userId = searchParams.get("userId")
 
-        if (!userEmail) {
+        if (!userId) {
             return NextResponse.json(
-                { error: "User email is required" },
+                { error: "User ID is required" },
                 { status: 400 }
             )
         }
@@ -58,7 +58,7 @@ export async function GET(request) {
         const assetsCollection = db.collection("assets")
         const transactionsCollection = db.collection("transactions")
 
-        const portfolio = await portfoliosCollection.findOne({ userEmail })
+        const portfolio = await portfoliosCollection.findOne({ userId })
 
         if (!portfolio || !portfolio.assets) {
             return NextResponse.json({
@@ -74,7 +74,7 @@ export async function GET(request) {
         for (const [symbol, asset] of Object.entries(portfolio.assets)) {
             const assetData = await assetsCollection.findOne({ symbol })
             const transactions = await transactionsCollection
-                .find({ userEmail, symbol })
+                .find({ userId, symbol })
                 .toArray()
 
             if (assetData && assetData.prices) {

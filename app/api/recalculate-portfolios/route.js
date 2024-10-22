@@ -8,14 +8,14 @@ export async function POST(request) {
         const transactionsCollection = db.collection("transactions")
         const portfoliosCollection = db.collection("portfolios")
 
-        // Get all unique userEmails
-        const uniqueUsers = await transactionsCollection.distinct("userEmail")
+        // Get all unique userIds
+        const uniqueUsers = await transactionsCollection.distinct("userId")
 
-        for (const userEmail of uniqueUsers) {
+        for (const userId of uniqueUsers) {
             // Calculate total shares and total paid for each symbol for the user
             const userPortfolio = await transactionsCollection
                 .aggregate([
-                    { $match: { userEmail } },
+                    { $match: { userId } },
                     {
                         $group: {
                             _id: "$symbol",
@@ -59,7 +59,7 @@ export async function POST(request) {
 
             // Update or insert the portfolio entry
             await portfoliosCollection.updateOne(
-                { userEmail },
+                { userId },
                 {
                     $set: {
                         assets,

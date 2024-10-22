@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server"
 import { hash } from "bcrypt"
 import clientPromise from "@/lib/mongodb"
+import { v4 as uuidv4 } from "uuid"
 
 export async function POST(request) {
     try {
         const { name, email, password } = await request.json()
         const hashedPassword = await hash(password, 10)
+        const userId = uuidv4()
 
         const client = await clientPromise
         const usersCollection = client.db("stocktracker").collection("users")
@@ -19,13 +21,14 @@ export async function POST(request) {
         }
 
         await usersCollection.insertOne({
+            _id: userId,
             name,
             email,
             password: hashedPassword,
         })
 
         return NextResponse.json(
-            { message: "User registered successfully" },
+            { message: "User registered successfully", userId },
             { status: 201 }
         )
     } catch (error) {

@@ -4,11 +4,11 @@ import clientPromise from "@/lib/mongodb"
 export async function GET(request) {
     console.log("entered in fetchTransactions")
     const { searchParams } = new URL(request.url)
-    const userEmail = searchParams.get("userEmail")
+    const userId = searchParams.get("userId")
 
-    if (!userEmail) {
+    if (!userId) {
         return NextResponse.json(
-            { error: "User email is required" },
+            { error: "User ID is required" },
             { status: 400 }
         )
     }
@@ -18,7 +18,7 @@ export async function GET(request) {
         const db = client.db("stocktracker")
         const transactions = await db
             .collection("transactions")
-            .find({ userEmail })
+            .find({ userId })
             .sort({ date: -1 })
             .toArray()
 
@@ -28,7 +28,7 @@ export async function GET(request) {
         }))
 
         console.log(
-            `Found ${formattedTransactions.length} transactions for ${userEmail}`
+            `Found ${formattedTransactions.length} transactions for user ${userId}`
         )
         return NextResponse.json(formattedTransactions)
     } catch (error) {

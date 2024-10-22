@@ -4,14 +4,14 @@ import clientPromise from "@/lib/mongodb"
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url)
-        const userEmail = searchParams.get("userEmail")
+        const userId = searchParams.get("userId")
         const timeRange = searchParams.get("timeRange")
         const includeTransactions =
             searchParams.get("includeTransactions") === "true"
 
-        if (!userEmail) {
+        if (!userId) {
             return NextResponse.json(
-                { error: "User email is required" },
+                { error: "User ID is required" },
                 { status: 400 }
             )
         }
@@ -22,7 +22,7 @@ export async function GET(request) {
         const assetsCollection = db.collection("assets")
 
         const transactions = await transactionsCollection
-            .find({ userEmail })
+            .find({ userId })
             .toArray()
         const symbols = [...new Set(transactions.map((t) => t.symbol))]
         const assetPrices = await Promise.all(

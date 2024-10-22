@@ -20,23 +20,21 @@ import {
 } from "@/components/ui/tooltip"
 import { fetchWithAuth } from "@/api-auth"
 
-export default function AssetList({ children, userEmail }) {
+export default function AssetList({ children, userId }) {
     const [assets, setAssets] = useState([])
     const [isLoading, setIsLoading] = useState(true)
-    const { data: session, status } = useSession()
 
     useEffect(() => {
-        if (userEmail || (status === "authenticated" && session?.user?.email)) {
+        if (userId) {
             fetchAssets()
         }
-    }, [status, session?.user?.email, userEmail])
+    }, [userId])
 
     const fetchAssets = async () => {
         try {
-            const email = userEmail || session.user.email
             const data = await fetchWithAuth(
-                `/api/portfolios/total-value?userEmail=${encodeURIComponent(
-                    email
+                `/api/portfolios/total-value?userId=${encodeURIComponent(
+                    userId
                 )}`
             )
             const assetData = Object.entries(data.assets)
@@ -54,8 +52,10 @@ export default function AssetList({ children, userEmail }) {
                     annualizedROI: asset.annualizedROI,
                 }))
             setAssets(assetData)
+            setIsLoading(false)
         } catch (error) {
             console.error("Error fetching asset data:", error)
+            setIsLoading(false)
         }
     }
 

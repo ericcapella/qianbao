@@ -4,13 +4,13 @@ import { fetchPricesFromAlphaVantage } from "@/app/api/assets/route"
 
 export async function POST(request) {
     try {
-        const { userEmail } = await request.json()
+        const { userId } = await request.json()
         const client = await clientPromise
         const db = client.db("stocktracker")
         const portfoliosCollection = db.collection("portfolios")
         const assetsCollection = db.collection("assets")
 
-        const portfolio = await portfoliosCollection.findOne({ userEmail })
+        const portfolio = await portfoliosCollection.findOne({ userId })
 
         if (!portfolio) {
             return NextResponse.json(
@@ -99,7 +99,7 @@ export async function POST(request) {
         }
 
         await portfoliosCollection.updateOne(
-            { userEmail },
+            { userId },
             { $set: { lastRefreshed: now } }
         )
 

@@ -3,12 +3,12 @@ import clientPromise from "@/lib/mongodb"
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url)
-    const userEmail = searchParams.get("userEmail")
+    const userId = searchParams.get("userId")
 
-    if (!userEmail) {
-        console.error("User email is missing in the request")
+    if (!userId) {
+        console.error("User ID is missing in the request")
         return NextResponse.json(
-            { error: "User email is required" },
+            { error: "User ID is required" },
             { status: 400 }
         )
     }
@@ -19,7 +19,7 @@ export async function GET(request) {
         const transactionsCollection = db.collection("transactions")
 
         const pipeline = [
-            { $match: { userEmail: userEmail } },
+            { $match: { userId: userId } },
             {
                 $group: {
                     _id: "$symbol",

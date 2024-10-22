@@ -23,15 +23,15 @@ export default function RealizedPnLDialog({ children }) {
     const { data: session, status } = useSession()
 
     useEffect(() => {
-        if (status === "authenticated" && session?.user?.email) {
+        if (status === "authenticated" && session?.user?.id) {
             fetchPnLData()
         }
     }, [status, session])
 
     const fetchPnLData = async () => {
         try {
-            const url = `/api/portfolios/realized-pnl?userEmail=${encodeURIComponent(
-                session.user.email
+            const url = `/api/portfolios/realized-pnl?userId=${encodeURIComponent(
+                session.user.id
             )}`
             const data = await fetchWithAuth(url)
             // Filter out assets without sell transactions

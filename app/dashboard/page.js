@@ -43,30 +43,30 @@ export default function Dashboard() {
     }, [status, router])
 
     useEffect(() => {
-        if (status === "authenticated" && session?.user?.email) {
+        if (status === "authenticated" && session?.user?.id) {
             fetchTransactions()
             fetchPortfolioData()
         }
-    }, [status, session?.user?.email])
+    }, [status, session?.user?.id])
 
     const fetchPortfolioData = async () => {
         try {
             const data = await fetchWithAuth(
-                `/api/portfolios?userEmail=${encodeURIComponent(
-                    session.user.email
-                )}`
+                `/api/portfolios?userId=${encodeURIComponent(session.user.id)}`
             )
             setLastRefreshed(data.lastRefreshed)
             setOldestPriceDate(data.oldestPriceDate)
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error fetching portfolio data:", error)
+        }
     }
 
     const fetchTransactions = async () => {
         setIsDataLoading(true)
         try {
             const data = await fetchWithAuth(
-                `/api/transactions?userEmail=${encodeURIComponent(
-                    session.user.email
+                `/api/transactions?userId=${encodeURIComponent(
+                    session.user.id
                 )}`
             )
             const unescapedData = data.map((transaction) => ({
@@ -75,6 +75,7 @@ export default function Dashboard() {
             }))
             setTransactions(unescapedData)
         } catch (error) {
+            console.error("Error fetching transactions:", error)
         } finally {
             setIsDataLoading(false)
         }
@@ -101,7 +102,7 @@ export default function Dashboard() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ userEmail: session.user.email }),
+                body: JSON.stringify({ userId: session.user.id }),
             })
 
             // Refresh the dashboard data regardless of the response
@@ -109,7 +110,7 @@ export default function Dashboard() {
             fetchTransactions()
             fetchPortfolioData()
         } catch (error) {
-            // Optionally, you can show an error message to the user here
+            console.error("Error refreshing portfolio:", error)
         }
     }
 
@@ -229,15 +230,15 @@ export default function Dashboard() {
                         </div>
                         <TotalValueChart
                             key={`valuechart-${refreshKey}`}
-                            userEmail={session.user.email}
+                            userId={session.user.id}
                         />
                         <AssetList
                             key={`assetlist-${refreshKey}`}
-                            userEmail={session.user.email}
+                            userId={session.user.id}
                         >
                             <AssetPieChart
                                 key={`piechart-${refreshKey}`}
-                                userEmail={session.user.email}
+                                userId={session.user.id}
                             />
                         </AssetList>
                         <TransactionsList

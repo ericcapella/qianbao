@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select"
 import { useSession } from "next-auth/react"
 import TotalValueCard from "./TotalValueCard"
-import { formatNumber } from "@/lib/utils"
+import { formatNumber, formatShares } from "@/lib/utils"
 import { fetchWithAuth } from "@/api-auth"
 
 const CustomTooltip = ({
@@ -96,7 +96,7 @@ const CustomTooltip = ({
                     <p className="text-sm">
                         {transaction.symbol.replace(/\uFF0E/g, ".")} (
                         {typeof transaction.shares === "number"
-                            ? transaction.shares.toFixed(6)
+                            ? formatShares(transaction.shares)
                             : "N/A"}{" "}
                         shares)
                     </p>
@@ -137,7 +137,7 @@ const CustomTooltip = ({
     )
 }
 
-export default function TotalValueChart({ userEmail }) {
+export default function TotalValueChart({ userId }) {
     const [chartData, setChartData] = useState([])
     const [timeRange, setTimeRange] = useState("1Y")
     const [totalValue, setTotalValue] = useState(0)
@@ -149,20 +149,18 @@ export default function TotalValueChart({ userEmail }) {
     const [hoveredDot, setHoveredDot] = useState(null)
     const [portfolioDistribution, setPortfolioDistribution] = useState({})
     const [combinedProgression, setCombinedProgression] = useState(0)
-    const { data: session, status } = useSession()
 
     useEffect(() => {
-        if (userEmail || (status === "authenticated" && session?.user?.email)) {
+        if (userId) {
             fetchChartData()
         }
-    }, [status, session?.user?.email, timeRange, userEmail])
+    }, [userId, timeRange])
 
     const fetchChartData = async () => {
         try {
-            const email = userEmail || session?.user?.email
             const data = await fetchWithAuth(
-                `/api/portfolios/value-history?userEmail=${encodeURIComponent(
-                    email
+                `/api/portfolios/value-history?userId=${encodeURIComponent(
+                    userId
                 )}&timeRange=${timeRange}&includeTransactions=true`
             )
             console.log("Received data from API:", data)
