@@ -10,7 +10,7 @@ export async function POST(request) {
         const userId = uuidv4()
 
         const client = await clientPromise
-        const usersCollection = client.db("stocktracker").collection("users")
+        const usersCollection = client.db("qianbao").collection("users")
 
         const existingUser = await usersCollection.findOne({ email })
         if (existingUser) {

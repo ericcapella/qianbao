@@ -4,7 +4,7 @@ import clientPromise from "@/lib/mongodb"
 export async function POST(request) {
     try {
         const client = await clientPromise
-        const db = client.db("stocktracker")
+        const db = client.db("qianbao")
         const transactionsCollection = db.collection("transactions")
         const portfoliosCollection = db.collection("portfolios")
 

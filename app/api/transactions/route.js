@@ -15,7 +15,7 @@ export async function GET(request) {
 
     try {
         const client = await clientPromise
-        const db = client.db("stocktracker")
+        const db = client.db("qianbao")
         const transactions = await db
             .collection("transactions")
             .find({ userId })

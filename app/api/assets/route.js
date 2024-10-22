@@ -5,7 +5,7 @@ export async function POST(request) {
     try {
         const { symbol, date, assetType } = await request.json()
         const client = await clientPromise
-        const db = client.db("stocktracker")
+        const db = client.db("qianbao")
         const assetsCollection = db.collection("assets")
 
         const existingAsset = await assetsCollection.findOne({ symbol })
@@ -154,7 +154,7 @@ export async function GET(request) {
         }
 
         const client = await clientPromise
-        const db = client.db("stocktracker")
+        const db = client.db("qianbao")
         const assetsCollection = db.collection("assets")
 
         const assets = await assetsCollection
@@ -217,7 +217,7 @@ export async function PUT(request) {
         }
 
         const client = await clientPromise
-        const db = client.db("stocktracker")
+        const db = client.db("qianbao")
         const transactionsCollection = db.collection("transactions")
         const portfoliosCollection = db.collection("portfolios")
         const assetsCollection = db.collection("assets")

@@ -53,7 +53,7 @@ export async function GET(request) {
         }
 
         const client = await clientPromise
-        const db = client.db("stocktracker")
+        const db = client.db("qianbao")
         const portfoliosCollection = db.collection("portfolios")
         const assetsCollection = db.collection("assets")
         const transactionsCollection = db.collection("transactions")

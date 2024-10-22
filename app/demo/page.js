@@ -20,8 +20,7 @@ export default function DemoPortfolio() {
     const [lastRefreshed, setLastRefreshed] = useState(null)
     const [oldestPriceDate, setOldestPriceDate] = useState(null)
 
-    const demoUserId = "9a1af2c9-a135-42d9-9c98-11753fd2171d"
-    // Replace with an actual UUID for the demo user
+    const demoUserId = "80aed672-cfc9-43fb-949e-eca04677194a"
 
     useEffect(() => {
         fetchTransactions()

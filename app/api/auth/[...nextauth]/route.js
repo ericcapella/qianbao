@@ -17,9 +17,7 @@ const authOptions = {
                 }
 
                 const client = await clientPromise
-                const usersCollection = client
-                    .db("stocktracker")
-                    .collection("users")
+                const usersCollection = client.db("qianbao").collection("users")
                 const user = await usersCollection.findOne({
                     email: credentials.email,
                 })
