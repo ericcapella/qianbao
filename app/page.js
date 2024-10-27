@@ -24,11 +24,11 @@ export default function Home() {
             </header>
 
             <main className="flex-grow flex flex-col items-center justify-center px-4 lg:px-8 max-w-[1150px] mx-auto w-full text-center">
-                <h1 className="text-5xl font-bold mt-8 mb-5">
+                <h1 className="text-3xl md:text-5xl font-bold mt-8 mb-5">
                     Simple and privacy-first <br />
                     investment portfolio tracker
                 </h1>
-                <h2 className="text-3xl font-semibold mb-5 text-muted-foreground">
+                <h2 className="text-2xl md:text-3xl font-semibold mb-5 text-muted-foreground">
                     All your assets in one place
                 </h2>
                 <div className="flex space-x-4 mb-8">
@@ -92,11 +92,25 @@ export default function Home() {
                         <span>Easy to set up</span>
                     </div>
                 </div>
-                <div className="mt-12 w-full max-w-3xl">
-                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                        <span className="text-muted-foreground">
-                            Hero Image Placeholder
-                        </span>
+                <div className="mt-12 w-full max-w-4xl">
+                    <div className="rounded-xl border bg-card shadow-lg overflow-hidden">
+                        <div className="bg-muted px-4 py-2 border-b flex items-center gap-2">
+                            <div className="flex gap-2">
+                                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                            </div>
+                        </div>
+                        <img
+                            src="/qianbao-dashboard-mobile.png"
+                            alt="Qianbao Dashboard"
+                            className="w-full md:hidden"
+                        />
+                        <img
+                            src="/qianbao-dashboard.png"
+                            alt="Qianbao Dashboard"
+                            className="hidden md:block w-full"
+                        />
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12 w-full max-w-4xl">
@@ -211,7 +225,7 @@ export default function Home() {
                     <div className="w-1/4 bg-muted rounded-lg flex items-center justify-center">
                         <span className="text-6xl font-bold">钱包</span>
                     </div>
-                    <div className="w-3/4 pl-8 text-left">
+                    <div className="w-3/4 pl-4 text-left">
                         <h3 className="text-2xl font-bold mb-4">
                             Why QianBao?
                         </h3>

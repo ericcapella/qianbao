@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import Image from "next/image"
 
 export default function Login() {
     const [email, setEmail] = useState("")
@@ -65,7 +66,15 @@ export default function Login() {
     }
 
     return (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center justify-center min-h-screen">
+            <Link href="/" className="mb-8">
+                <Image
+                    src="/qianbao-logo.png"
+                    alt="Qianbao Logo"
+                    width={110}
+                    height={22}
+                />
+            </Link>
             <Card className="w-full max-w-sm">
                 <CardHeader>
                     <CardTitle className="text-2xl">Login</CardTitle>
@@ -91,7 +100,7 @@ export default function Login() {
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="password">Password</Label>
                                 <Link
-                                    href={`mailto:support@qianbao.finance?subject=I forgot my password&body=My email is ${email}`}
+                                    href={`mailto:info@wioks.com?subject=I forgot my QianBaopassword&body=My email is ${email}`}
                                     className="text-sm underline"
                                     tabIndex="-1"
                                 >

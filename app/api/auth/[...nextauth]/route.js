@@ -4,6 +4,18 @@ import { compare } from "bcrypt"
 import clientPromise from "@/lib/mongodb"
 
 const authOptions = {
+    debug: true,
+    logger: {
+        error: (code, metadata) => {
+            console.error(code, metadata)
+        },
+        warn: (code) => {
+            console.warn(code)
+        },
+        debug: (code, metadata) => {
+            console.log(code, metadata)
+        },
+    },
     providers: [
         CredentialsProvider({
             name: "Credentials",
@@ -61,7 +73,6 @@ const authOptions = {
         signIn: "/login",
     },
     secret: process.env.NEXTAUTH_SECRET,
-    debug: process.env.NODE_ENV === "development",
 }
 
 const handler = NextAuth(authOptions)

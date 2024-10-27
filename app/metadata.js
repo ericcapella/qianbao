@@ -3,9 +3,9 @@ export const metadata = {
     description:
         "Track stocks, ETFs, crypto, and more. Monitor your net worth in real-time with QianBao, an open-source, simple and privacy-focused portfolio tracker.",
     icons: {
-        icon: "/icon-removebg-preview.png",
+        icon: "/icon.ico",
     },
     openGraph: {
-        images: ["/icon-removebg-preview.png"],
+        images: ["/icon.png"],
     },
 }

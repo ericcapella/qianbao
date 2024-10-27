@@ -79,6 +79,7 @@ const CustomTooltip = ({
             <div className="mt-2 border-t pt-2">
                 {Object.entries(distribution)
                     .filter(([_, percentage]) => percentage !== 0)
+                    .sort(([, a], [, b]) => b - a)
                     .map(([symbol, percentage]) => (
                         <p key={symbol} className="text-sm">
                             {percentage ? percentage.toFixed(0) : "0"}%{" "}
@@ -193,7 +194,7 @@ export default function TotalValueChart({ userId }) {
         }
     }
 
-    const isPositiveProgression = combinedProgression > 0
+    const isPositiveProgression = combinedProgression >= 0
     const chartColor = isPositiveProgression ? "#5AC87C" : "#EF5343"
 
     const formatXAxis = (tickItem) => {

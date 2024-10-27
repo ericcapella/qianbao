@@ -79,11 +79,12 @@ export default function AssetPieChart({ userId }) {
         return null
     }
 
+    const chartContainerClass = `w-full h-[250px] [&_.recharts-pie-label-text]:fill-foreground ml-[-1rem] ${
+        data.length > 4 ? "mt-20" : data.length > 2 ? "mt-12" : ""
+    }`
+
     return (
-        <ChartContainer
-            className="w-full h-[250px] [&_.recharts-pie-label-text]:fill-foreground"
-            config={chartConfig}
-        >
+        <ChartContainer className={chartContainerClass} config={chartConfig}>
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                     <ChartTooltip content={<CustomTooltip />} />

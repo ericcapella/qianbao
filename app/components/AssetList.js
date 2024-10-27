@@ -51,6 +51,7 @@ export default function AssetList({ children, userId }) {
                     assetType: asset.assetType,
                     annualizedROI: asset.annualizedROI,
                 }))
+                .sort((a, b) => b.position - a.position) // Sort by position value, descending
             setAssets(assetData)
             setIsLoading(false)
         } catch (error) {

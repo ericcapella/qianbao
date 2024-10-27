@@ -25,6 +25,7 @@ import Link from "next/link"
 import { RefreshCcw } from "lucide-react"
 import Footer from "../components/Footer"
 import { fetchWithAuth } from "@/api-auth"
+import Head from "next/head"
 
 export default function Dashboard() {
     const [refreshKey, setRefreshKey] = useState(0)
@@ -149,6 +150,9 @@ export default function Dashboard() {
 
     return (
         <div>
+            <Head>
+                <meta name="robots" content="noindex,nofollow" />
+            </Head>
             <header className="flex justify-between items-center py-4 mx-auto px-4 lg:max-w-[1150px]">
                 <div className="">
                     <Link href="/">
