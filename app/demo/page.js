@@ -126,7 +126,7 @@ export default function DemoPortfolio() {
             <main className="mx-auto px-4 lg:max-w-[1150px]">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2">
                     <h1 className="text-2xl font-medium w-full sm:w-auto mb-2 sm:mb-0">
-                        Demo Investment Portfolio
+                        Demo investment portfolio
                     </h1>
                     <div className="flex items-center justify-end space-x-4">
                         <div className="flex items-center">

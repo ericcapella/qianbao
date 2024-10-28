@@ -6,6 +6,6 @@ export const metadata = {
         icon: "/icon.ico",
     },
     openGraph: {
-        images: ["/icon.png"],
+        images: ["/qianbao-og-image.webp"],
     },
 }

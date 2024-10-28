@@ -244,7 +244,7 @@ export default function Home() {
                         </p>
                     </div>
                 </div>
-                <div className=" w-full max-w-4xl p-12 rounded-lg text-center">
+                <div className="w-full max-w-4xl py-12 px-0 md:p-12 rounded-lg text-center">
                     <h3 className="text-3xl font-bold mb-4">
                         Proudly open-source
                     </h3>
